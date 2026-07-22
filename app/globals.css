@@ -362,6 +362,41 @@ legend { margin-bottom:10px; color:#6e647f; font-size:11px; font-weight:900; let
 .option-grid { display:grid; gap:9px; }
 .option-grid button { cursor:pointer; }
 
+.style-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #f5f2f8;
+}
+
+.style-switch button {
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: transparent;
+  color: #7a708b;
+  cursor: pointer;
+}
+
+.style-switch button.selected {
+  background: #fff;
+  color: #6957a9;
+  box-shadow: 0 3px 12px rgba(78, 63, 111, .12);
+}
+
+.style-switch button > span:not(.real-dot) { display:flex; flex-direction:column; text-align:left; }
+.style-switch strong { font-size:12px; }
+.style-switch small { margin-top:1px; color:var(--muted); font-size:9px; }
+.real-dot { width:16px; height:16px; border-radius:50%; background:linear-gradient(145deg, #ccd5e9, #9b86b8); box-shadow:inset 0 0 0 3px #fff; }
+
 .outfit-grid button {
   height:77px;
   padding:7px;

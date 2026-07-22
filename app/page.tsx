@@ -22,6 +22,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 type Outfit = "cozy" | "academy" | "adventurer";
 type Scene = "room" | "cafe" | "stars";
 type Mouth = "closed" | "small" | "open";
+type AvatarStyle = "anime" | "real";
 type Status = "idle" | "connecting" | "connected" | "error";
 
 const outfitOptions: Array<{ id: Outfit; label: string; hint: string }> = [
@@ -71,6 +72,7 @@ function decodeBase64(value: string) {
 }
 
 export default function Home() {
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>("anime");
   const [outfit, setOutfit] = useState<Outfit>("academy");
   const [scene, setScene] = useState<Scene>("room");
   const [mouth, setMouth] = useState<Mouth>("closed");
@@ -82,31 +84,38 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const nextPlayTimeRef = useRef(0);
-  const mouthAnimationRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mouthFrameRef = useRef(0);
+  const mouthAnimationRef = useRef<number | null>(null);
 
   const stopMouthAnimation = () => {
-    if (mouthAnimationRef.current) clearInterval(mouthAnimationRef.current);
+    if (mouthAnimationRef.current !== null) cancelAnimationFrame(mouthAnimationRef.current);
     mouthAnimationRef.current = null;
-    mouthFrameRef.current = 0;
     setMouth("closed");
   };
 
   const startMouthAnimation = () => {
     if (mouthAnimationRef.current) return;
 
-    mouthAnimationRef.current = setInterval(() => {
+    const values = new Uint8Array(analyserRef.current?.fftSize ?? 256);
+    const animate = () => {
       const context = audioContextRef.current;
       if (!context || context.currentTime >= nextPlayTimeRef.current - 0.04) {
         stopMouthAnimation();
         return;
       }
 
-      mouthFrameRef.current += 1;
-      const frame = mouthFrameRef.current % 4;
-      setMouth(frame === 2 ? "open" : frame === 0 ? "closed" : "small");
-    }, 90);
+      const analyser = analyserRef.current;
+      if (analyser) {
+        analyser.getByteTimeDomainData(values);
+        let peak = 0;
+        for (const value of values) peak = Math.max(peak, Math.abs(value - 128) / 128);
+        setMouth(peak > 0.24 ? "open" : peak > 0.055 ? "small" : "closed");
+      }
+      mouthAnimationRef.current = requestAnimationFrame(animate);
+    };
+
+    mouthAnimationRef.current = requestAnimationFrame(animate);
   };
 
   const stopSession = () => {
@@ -119,6 +128,7 @@ export default function Home() {
     sessionRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
+    analyserRef.current = null;
     nextPlayTimeRef.current = 0;
     stopMouthAnimation();
     setStatus("idle");
@@ -130,7 +140,7 @@ export default function Home() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     sessionRef.current?.close();
     audioContextRef.current?.close();
-    if (mouthAnimationRef.current) clearInterval(mouthAnimationRef.current);
+    if (mouthAnimationRef.current !== null) cancelAnimationFrame(mouthAnimationRef.current);
   }, []);
 
   const playChunk = (encoded: string) => {
@@ -149,7 +159,7 @@ export default function Home() {
 
     const source = context.createBufferSource();
     source.buffer = buffer;
-    source.connect(context.destination);
+    source.connect(analyserRef.current ?? context.destination);
     const startAt = Math.max(context.currentTime + 0.035, nextPlayTimeRef.current);
     source.start(startAt);
     nextPlayTimeRef.current = startAt + buffer.duration;
@@ -180,6 +190,11 @@ export default function Home() {
       const context = new AudioContext();
       await context.resume();
       audioContextRef.current = context;
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.35;
+      analyser.connect(context.destination);
+      analyserRef.current = analyser;
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
@@ -295,21 +310,40 @@ export default function Home() {
         <div className="character-wrap">
           <div className="name-chip"><span /> Maya · 26</div>
           <div className="character-layer">
-            <img
-              className="character"
-              src={`/sprites/maya-${outfit}-base.png`}
-              alt={`Maya wearing her ${outfit} outfit`}
-            />
-            {mouth !== "closed" && (
+            {avatarStyle === "anime" ? (
               <img
-                className="mouth-overlay"
-                src={`/sprites/maya-${outfit}-mouth-${mouth}.png`}
-                alt=""
+                className="character"
+                src={`/sprites/lumi-${outfit}-${mouth}.png`}
+                alt={`Anime Maya wearing her ${outfit} outfit`}
               />
+            ) : (
+              <>
+                <img
+                  className="character"
+                  src={`/sprites/maya-${outfit}-base.png`}
+                  alt={`Realistic Maya wearing her ${outfit} outfit`}
+                />
+                {mouth !== "closed" && (
+                  <img
+                    className="mouth-overlay"
+                    src={`/sprites/maya-${outfit}-mouth-${mouth}.png`}
+                    alt=""
+                  />
+                )}
+              </>
             )}
           </div>
-          {(["small", "open"] as const).map((state) => (
-            <img key={state} className="preload" src={`/sprites/maya-${outfit}-mouth-${state}.png`} alt="" />
+          {(["closed", "small", "open"] as const).map((state) => (
+            <img
+              key={`${avatarStyle}-${state}`}
+              className="preload"
+              src={avatarStyle === "anime"
+                ? `/sprites/lumi-${outfit}-${state}.png`
+                : state === "closed"
+                  ? `/sprites/maya-${outfit}-base.png`
+                  : `/sprites/maya-${outfit}-mouth-${state}.png`}
+              alt=""
+            />
           ))}
         </div>
 
@@ -367,6 +401,30 @@ export default function Home() {
         </div>
 
         <fieldset>
+          <legend>Character style</legend>
+          <div className="style-switch" role="group" aria-label="Character style">
+            <button
+              type="button"
+              className={avatarStyle === "anime" ? "selected" : ""}
+              onClick={() => setAvatarStyle("anime")}
+              aria-pressed={avatarStyle === "anime"}
+            >
+              <Sparkles size={16} />
+              <span><strong>Anime</strong><small>Best lip sync</small></span>
+            </button>
+            <button
+              type="button"
+              className={avatarStyle === "real" ? "selected" : ""}
+              onClick={() => setAvatarStyle("real")}
+              aria-pressed={avatarStyle === "real"}
+            >
+              <span className="real-dot" />
+              <span><strong>Real</strong><small>Portrait</small></span>
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset>
           <legend>Outfit</legend>
           <div className="option-grid outfit-grid">
             {outfitOptions.map((option) => (
@@ -377,7 +435,12 @@ export default function Home() {
                 onClick={() => setOutfit(option.id)}
                 aria-pressed={outfit === option.id}
               >
-                <img src={`/sprites/maya-${option.id}-base.png`} alt="" />
+                <img
+                  src={avatarStyle === "anime"
+                    ? `/sprites/lumi-${option.id}-closed.png`
+                    : `/sprites/maya-${option.id}-base.png`}
+                  alt=""
+                />
                 <span><strong>{option.label}</strong><small>{option.hint}</small></span>
               </button>
             ))}
