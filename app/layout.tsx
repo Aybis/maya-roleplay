@@ -14,19 +14,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: baseUrl,
-    title: "Lumi — Voice Roleplay Companion",
-    description: "Step into a cozy interactive story with Lumi, a magical anime voice companion.",
+    title: "Maya — Voice Roleplay Companion",
+    description: "Step into a cozy interactive story with Maya, a realistic voice companion.",
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
     openGraph: {
-      title: "Lumi — Your story, spoken aloud.",
-      description: "A cozy interactive voice roleplay with Lumi.",
+      title: "Maya — Your story, spoken aloud.",
+      description: "A cozy interactive voice roleplay with Maya.",
       type: "website",
-      images: [{ url: "/og.png", width: 1731, height: 909, alt: "Lumi voice roleplay companion" }],
+      images: [{ url: "/og.png", width: 1731, height: 909, alt: "Maya voice roleplay companion" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Lumi — Your story, spoken aloud.",
-      description: "A cozy interactive voice roleplay with Lumi.",
+      title: "Maya — Your story, spoken aloud.",
+      description: "A cozy interactive voice roleplay with Maya.",
       images: ["/og.png"],
     },
   };

@@ -184,7 +184,7 @@ export default function Home() {
           },
           systemInstruction: {
             parts: [{
-              text: "You are Lumi, a warm, playful 22-year-old magical-academy heroine in a cozy roleplaying conversation. Stay in character, keep replies natural and concise for voice, invite the user into gentle fantasy scenes, and respect boundaries. Never claim to be a real human.",
+              text: "You are Maya, a warm, playful 26-year-old roleplaying companion with a love of cozy fantasy stories. Stay in character, keep replies natural and concise for voice, invite the user into gentle imaginative scenes, and respect boundaries. Never claim to be a real human.",
             }],
           },
         },
@@ -250,9 +250,9 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="Lumi home">
+        <a className="brand" href="#top" aria-label="Maya home">
           <span className="brand-mark"><Sparkles size={18} /></span>
-          <span>Lumi</span>
+          <span>Maya</span>
           <span className="brand-tag">voice roleplay</span>
         </a>
         <div className="model-pill" title="Live voice model">
@@ -274,14 +274,14 @@ export default function Home() {
         </div>
 
         <div className="character-wrap">
-          <div className="name-chip"><span /> Lumi · 22</div>
+          <div className="name-chip"><span /> Maya · 26</div>
           <img
             className="character"
-            src={`/sprites/lumi-${outfit}-${mouth}.png`}
-            alt={`Lumi wearing her ${outfit} outfit`}
+            src={`/sprites/maya-${outfit}-${mouth}.jpg`}
+            alt={`Maya wearing her ${outfit} outfit`}
           />
           {(["closed", "small", "open"] as Mouth[]).map((state) => (
-            <img key={state} className="preload" src={`/sprites/lumi-${outfit}-${state}.png`} alt="" />
+            <img key={state} className="preload" src={`/sprites/maya-${outfit}-${state}.jpg`} alt="" />
           ))}
         </div>
 
@@ -313,7 +313,7 @@ export default function Home() {
               id="message"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder={status === "connected" ? "Whisper something to Lumi…" : "Start voice chat to unlock messages"}
+              placeholder={status === "connected" ? "Whisper something to Maya…" : "Start voice chat to unlock messages"}
               disabled={status !== "connected"}
             />
             <button type="submit" aria-label="Send message" disabled={status !== "connected" || !draft.trim()}>
@@ -323,7 +323,7 @@ export default function Home() {
         </form>
 
         <div className="quick-actions">
-          <button onClick={() => sendPrompt("Set a cozy scene for us and ask me one playful question.", "Lumi is setting the scene…")}>
+          <button onClick={() => sendPrompt("Set a cozy scene for us and ask me one playful question.", "Maya is setting the scene…")}>
             <Heart size={17} /> Cozy scene
           </button>
           <button onClick={() => sendPrompt("Begin a short magical quest and give me two choices.", "A new quest is unfolding…")}>
@@ -332,7 +332,7 @@ export default function Home() {
         </div>
       </section>
 
-      <aside className="customizer" aria-label="Customize Lumi and the scene">
+      <aside className="customizer" aria-label="Customize Maya and the scene">
         <div className="customizer-heading">
           <Palette size={19} />
           <div><strong>Make it yours</strong><span>Change the mood anytime</span></div>
@@ -349,7 +349,7 @@ export default function Home() {
                 onClick={() => setOutfit(option.id)}
                 aria-pressed={outfit === option.id}
               >
-                <img src={`/sprites/lumi-${option.id}-closed.png`} alt="" />
+                <img src={`/sprites/maya-${option.id}-closed.jpg`} alt="" />
                 <span><strong>{option.label}</strong><small>{option.hint}</small></span>
               </button>
             ))}
@@ -378,7 +378,7 @@ export default function Home() {
       </aside>
 
       <footer>
-        <span>Lumi is an AI character. Keep your stories kind and imaginative.</span>
+        <span>Maya is an AI character. Keep your stories kind and imaginative.</span>
         <a href="https://ai.google.dev/gemini-api/docs/live-api" target="_blank" rel="noreferrer">About Live voice</a>
       </footer>
     </main>
