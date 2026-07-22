@@ -83,7 +83,31 @@ export default function Home() {
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const nextPlayTimeRef = useRef(0);
-  const mouthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mouthAnimationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mouthFrameRef = useRef(0);
+
+  const stopMouthAnimation = () => {
+    if (mouthAnimationRef.current) clearInterval(mouthAnimationRef.current);
+    mouthAnimationRef.current = null;
+    mouthFrameRef.current = 0;
+    setMouth("closed");
+  };
+
+  const startMouthAnimation = () => {
+    if (mouthAnimationRef.current) return;
+
+    mouthAnimationRef.current = setInterval(() => {
+      const context = audioContextRef.current;
+      if (!context || context.currentTime >= nextPlayTimeRef.current - 0.04) {
+        stopMouthAnimation();
+        return;
+      }
+
+      mouthFrameRef.current += 1;
+      const frame = mouthFrameRef.current % 4;
+      setMouth(frame === 2 ? "open" : frame === 0 ? "closed" : "small");
+    }, 90);
+  };
 
   const stopSession = () => {
     processorRef.current?.disconnect();
@@ -96,7 +120,7 @@ export default function Home() {
     audioContextRef.current?.close();
     audioContextRef.current = null;
     nextPlayTimeRef.current = 0;
-    setMouth("closed");
+    stopMouthAnimation();
     setStatus("idle");
     setSubtitle("Our story is paused. I’ll be here when you come back.");
   };
@@ -106,6 +130,7 @@ export default function Home() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     sessionRef.current?.close();
     audioContextRef.current?.close();
+    if (mouthAnimationRef.current) clearInterval(mouthAnimationRef.current);
   }, []);
 
   const playChunk = (encoded: string) => {
@@ -117,11 +142,9 @@ export default function Home() {
     const sampleCount = Math.floor(bytes.byteLength / 2);
     const buffer = context.createBuffer(1, sampleCount, 24000);
     const channel = buffer.getChannelData(0);
-    let energy = 0;
 
     for (let i = 0; i < sampleCount; i += 1) {
       channel[i] = view.getInt16(i * 2, true) / 32768;
-      energy += Math.abs(channel[i]);
     }
 
     const source = context.createBufferSource();
@@ -130,11 +153,7 @@ export default function Home() {
     const startAt = Math.max(context.currentTime + 0.035, nextPlayTimeRef.current);
     source.start(startAt);
     nextPlayTimeRef.current = startAt + buffer.duration;
-
-    const intensity = energy / Math.max(1, sampleCount);
-    setMouth(intensity > 0.12 ? "open" : "small");
-    if (mouthTimerRef.current) clearTimeout(mouthTimerRef.current);
-    mouthTimerRef.current = setTimeout(() => setMouth("closed"), buffer.duration * 1000 + 90);
+    startMouthAnimation();
   };
 
   const handleMessage = (message: LiveServerMessage) => {
@@ -143,7 +162,7 @@ export default function Home() {
     if (text?.trim()) setSubtitle(text.trim());
     if (message.serverContent?.interrupted) {
       nextPlayTimeRef.current = 0;
-      setMouth("closed");
+      stopMouthAnimation();
     }
   };
 
@@ -275,13 +294,22 @@ export default function Home() {
 
         <div className="character-wrap">
           <div className="name-chip"><span /> Maya · 26</div>
-          <img
-            className="character"
-            src={`/sprites/maya-${outfit}-${mouth}.jpg`}
-            alt={`Maya wearing her ${outfit} outfit`}
-          />
-          {(["closed", "small", "open"] as Mouth[]).map((state) => (
-            <img key={state} className="preload" src={`/sprites/maya-${outfit}-${state}.jpg`} alt="" />
+          <div className="character-layer">
+            <img
+              className="character"
+              src={`/sprites/maya-${outfit}-base.png`}
+              alt={`Maya wearing her ${outfit} outfit`}
+            />
+            {mouth !== "closed" && (
+              <img
+                className="mouth-overlay"
+                src={`/sprites/maya-${outfit}-mouth-${mouth}.png`}
+                alt=""
+              />
+            )}
+          </div>
+          {(["small", "open"] as const).map((state) => (
+            <img key={state} className="preload" src={`/sprites/maya-${outfit}-mouth-${state}.png`} alt="" />
           ))}
         </div>
 
@@ -349,7 +377,7 @@ export default function Home() {
                 onClick={() => setOutfit(option.id)}
                 aria-pressed={outfit === option.id}
               >
-                <img src={`/sprites/maya-${option.id}-closed.jpg`} alt="" />
+                <img src={`/sprites/maya-${option.id}-base.png`} alt="" />
                 <span><strong>{option.label}</strong><small>{option.hint}</small></span>
               </button>
             ))}
