@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import {
   GoogleGenAI,
   Modality,
   type LiveServerMessage,
   type Session,
-} from "@google/genai";
+} from '@google/genai';
 import {
   CircleStop,
   Coffee,
@@ -16,31 +16,31 @@ import {
   Send,
   Sparkles,
   WandSparkles,
-} from "lucide-react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+} from 'lucide-react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 
-type Outfit = "cozy" | "academy" | "adventurer";
-type Scene = "room" | "cafe" | "stars";
-type Mouth = "closed" | "small" | "open";
-type AvatarStyle = "anime" | "real";
-type Status = "idle" | "connecting" | "connected" | "error";
+type Outfit = 'cozy' | 'academy' | 'adventurer';
+type Scene = 'room' | 'cafe' | 'stars';
+type Mouth = 'closed' | 'small' | 'open';
+type AvatarStyle = 'anime' | 'real';
+type Status = 'idle' | 'connecting' | 'connected' | 'error';
 
 const outfitOptions: Array<{ id: Outfit; label: string; hint: string }> = [
-  { id: "cozy", label: "Cozy knit", hint: "Soft & comfy" },
-  { id: "academy", label: "Academy", hint: "Magic class" },
-  { id: "adventurer", label: "Adventurer", hint: "Quest ready" },
+  { id: 'cozy', label: 'Cozy knit', hint: 'Soft & comfy' },
+  { id: 'academy', label: 'Academy', hint: 'Magic class' },
+  { id: 'adventurer', label: 'Adventurer', hint: 'Quest ready' },
 ];
 
 const sceneOptions: Array<{ id: Scene; label: string; icon: typeof Coffee }> = [
-  { id: "room", label: "Moonlit room", icon: WandSparkles },
-  { id: "cafe", label: "Cloud café", icon: Coffee },
-  { id: "stars", label: "Stargarden", icon: Sparkles },
+  { id: 'room', label: 'Moonlit room', icon: WandSparkles },
+  { id: 'cafe', label: 'Cloud café', icon: Coffee },
+  { id: 'stars', label: 'Stargarden', icon: Sparkles },
 ];
 
 const starterLines = [
-  "I’m right here. Tell me what kind of story you’d like to step into.",
-  "Want a cozy chat, a magical quest, or a little mystery tonight?",
-  "Your voice can shape our world. Whenever you’re ready, I’m listening.",
+  'I’m right here. Tell me what kind of story you’d like to step into.',
+  'Want a cozy chat, a magical quest, or a little mystery tonight?',
+  'Your voice can shape our world. Whenever you’re ready, I’m listening.',
 ];
 
 function encodePcm(samples: Float32Array, sourceRate: number) {
@@ -59,8 +59,9 @@ function encodePcm(samples: Float32Array, sourceRate: number) {
   }
 
   const bytes = new Uint8Array(pcm.buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 1)
+    binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
 
@@ -72,13 +73,13 @@ function decodeBase64(value: string) {
 }
 
 export default function Home() {
-  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>("anime");
-  const [outfit, setOutfit] = useState<Outfit>("academy");
-  const [scene, setScene] = useState<Scene>("room");
-  const [mouth, setMouth] = useState<Mouth>("closed");
-  const [status, setStatus] = useState<Status>("idle");
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('anime');
+  const [outfit, setOutfit] = useState<Outfit>('academy');
+  const [scene, setScene] = useState<Scene>('room');
+  const [mouth, setMouth] = useState<Mouth>('closed');
+  const [status, setStatus] = useState<Status>('idle');
   const [subtitle, setSubtitle] = useState(starterLines[0]);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState('');
 
   const sessionRef = useRef<Session | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -89,9 +90,10 @@ export default function Home() {
   const mouthAnimationRef = useRef<number | null>(null);
 
   const stopMouthAnimation = () => {
-    if (mouthAnimationRef.current !== null) cancelAnimationFrame(mouthAnimationRef.current);
+    if (mouthAnimationRef.current !== null)
+      cancelAnimationFrame(mouthAnimationRef.current);
     mouthAnimationRef.current = null;
-    setMouth("closed");
+    setMouth('closed');
   };
 
   const startMouthAnimation = () => {
@@ -109,8 +111,9 @@ export default function Home() {
       if (analyser) {
         analyser.getByteTimeDomainData(values);
         let peak = 0;
-        for (const value of values) peak = Math.max(peak, Math.abs(value - 128) / 128);
-        setMouth(peak > 0.24 ? "open" : peak > 0.055 ? "small" : "closed");
+        for (const value of values)
+          peak = Math.max(peak, Math.abs(value - 128) / 128);
+        setMouth(peak > 0.24 ? 'open' : peak > 0.055 ? 'small' : 'closed');
       }
       mouthAnimationRef.current = requestAnimationFrame(animate);
     };
@@ -131,17 +134,21 @@ export default function Home() {
     analyserRef.current = null;
     nextPlayTimeRef.current = 0;
     stopMouthAnimation();
-    setStatus("idle");
-    setSubtitle("Our story is paused. I’ll be here when you come back.");
+    setStatus('idle');
+    setSubtitle('Our story is paused. I’ll be here when you come back.');
   };
 
-  useEffect(() => () => {
-    processorRef.current?.disconnect();
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    sessionRef.current?.close();
-    audioContextRef.current?.close();
-    if (mouthAnimationRef.current !== null) cancelAnimationFrame(mouthAnimationRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      processorRef.current?.disconnect();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      sessionRef.current?.close();
+      audioContextRef.current?.close();
+      if (mouthAnimationRef.current !== null)
+        cancelAnimationFrame(mouthAnimationRef.current);
+    },
+    [],
+  );
 
   const playChunk = (encoded: string) => {
     const context = audioContextRef.current;
@@ -160,7 +167,10 @@ export default function Home() {
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.connect(analyserRef.current ?? context.destination);
-    const startAt = Math.max(context.currentTime + 0.035, nextPlayTimeRef.current);
+    const startAt = Math.max(
+      context.currentTime + 0.035,
+      nextPlayTimeRef.current,
+    );
     source.start(startAt);
     nextPlayTimeRef.current = startAt + buffer.duration;
     startMouthAnimation();
@@ -178,13 +188,18 @@ export default function Home() {
 
   const beginSession = async () => {
     try {
-      setStatus("connecting");
-      setSubtitle("Opening a little doorway between our worlds…");
+      setStatus('connecting');
+      setSubtitle('Opening a little doorway between our worlds…');
 
-      const tokenResponse = await fetch("/api/token", { method: "POST" });
-      const tokenPayload = (await tokenResponse.json()) as { token?: string; error?: string };
+      const tokenResponse = await fetch('/api/token', { method: 'POST' });
+      const tokenPayload = (await tokenResponse.json()) as {
+        token?: string;
+        error?: string;
+      };
       if (!tokenResponse.ok || !tokenPayload.token) {
-        throw new Error(tokenPayload.error || "Unable to begin a voice session.");
+        throw new Error(
+          tokenPayload.error || 'Unable to begin a voice session.',
+        );
       }
 
       const context = new AudioContext();
@@ -196,17 +211,21 @@ export default function Home() {
       analyser.connect(context.destination);
       analyserRef.current = analyser;
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
       streamRef.current = stream;
 
       const ai = new GoogleGenAI({
         apiKey: tokenPayload.token,
-        httpOptions: { apiVersion: "v1alpha" },
+        httpOptions: { apiVersion: 'v1alpha' },
       });
 
       const session = await ai.live.connect({
-        model: "gemini-3.1-flash-live-preview",
+        model: 'gemini-3.1-flash-live-preview',
         config: {
           responseModalities: [Modality.AUDIO],
           temperature: 0.8,
@@ -214,26 +233,30 @@ export default function Home() {
           inputAudioTranscription: {},
           outputAudioTranscription: {},
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Despina' } },
           },
           systemInstruction: {
-            parts: [{
-              text: "You are Maya, a warm, playful 26-year-old roleplaying companion with a love of cozy fantasy stories. Stay in character, keep replies natural and concise for voice, invite the user into gentle imaginative scenes, and respect boundaries. Never claim to be a real human.",
-            }],
+            parts: [
+              {
+                text: 'You are Maya, a warm, playful 26-year-old roleplaying companion with a love of cozy fantasy stories. Stay in character, keep replies natural and concise for voice, invite the user into gentle imaginative scenes, and respect boundaries. Never claim to be a real human.',
+              },
+            ],
           },
         },
         callbacks: {
           onopen: () => {
-            setStatus("connected");
-            setSubtitle("I can hear you! What adventure shall we begin?");
+            setStatus('connected');
+            setSubtitle('I can hear you! What adventure shall we begin?');
           },
           onmessage: handleMessage,
           onerror: () => {
-            setStatus("error");
-            setSubtitle("The connection flickered. Let’s try opening it again.");
+            setStatus('error');
+            setSubtitle(
+              'The connection flickered. Let’s try opening it again.',
+            );
           },
           onclose: () => {
-            if (sessionRef.current) setStatus("idle");
+            if (sessionRef.current) setStatus('idle');
           },
         },
       });
@@ -245,9 +268,12 @@ export default function Home() {
       silent.gain.value = 0;
       processor.onaudioprocess = (event) => {
         if (!sessionRef.current) return;
-        const encoded = encodePcm(event.inputBuffer.getChannelData(0), context.sampleRate);
+        const encoded = encodePcm(
+          event.inputBuffer.getChannelData(0),
+          context.sampleRate,
+        );
         sessionRef.current.sendRealtimeInput({
-          audio: { data: encoded, mimeType: "audio/pcm;rate=16000" },
+          audio: { data: encoded, mimeType: 'audio/pcm;rate=16000' },
         });
       };
       input.connect(processor);
@@ -256,8 +282,12 @@ export default function Home() {
       processorRef.current = processor;
     } catch (error) {
       console.error(error);
-      setStatus("error");
-      setSubtitle(error instanceof Error ? error.message : "I couldn’t reach the voice realm just yet.");
+      setStatus('error');
+      setSubtitle(
+        error instanceof Error
+          ? error.message
+          : 'I couldn’t reach the voice realm just yet.',
+      );
       streamRef.current?.getTracks().forEach((track) => track.stop());
       sessionRef.current?.close();
     }
@@ -269,15 +299,20 @@ export default function Home() {
     if (!text || !sessionRef.current) return;
     sessionRef.current.sendClientContent({ turns: text, turnComplete: true });
     setSubtitle(`You: ${text}`);
-    setDraft("");
+    setDraft('');
   };
 
   const sendPrompt = (prompt: string, fallback: string) => {
     if (sessionRef.current) {
-      sessionRef.current.sendClientContent({ turns: prompt, turnComplete: true });
+      sessionRef.current.sendClientContent({
+        turns: prompt,
+        turnComplete: true,
+      });
       setSubtitle(fallback);
     } else {
-      setSubtitle("Start the voice chat first, then we can make that part of our story.");
+      setSubtitle(
+        'Start the voice chat first, then we can make that part of our story.',
+      );
     }
   };
 
@@ -285,7 +320,9 @@ export default function Home() {
     <main className="app-shell">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="Maya home">
-          <span className="brand-mark"><Sparkles size={18} /></span>
+          <span className="brand-mark">
+            <Sparkles size={18} />
+          </span>
           <span>Maya</span>
           <span className="brand-tag">voice roleplay</span>
         </a>
@@ -308,9 +345,11 @@ export default function Home() {
         </div>
 
         <div className="character-wrap">
-          <div className="name-chip"><span /> Maya · 26</div>
+          <div className="name-chip">
+            <span /> Maya · 26
+          </div>
           <div className="character-layer">
-            {avatarStyle === "anime" ? (
+            {avatarStyle === 'anime' ? (
               <img
                 className="character"
                 src={`/sprites/lumi-${outfit}-${mouth}.png`}
@@ -323,7 +362,7 @@ export default function Home() {
                   src={`/sprites/maya-${outfit}-base.png`}
                   alt={`Realistic Maya wearing her ${outfit} outfit`}
                 />
-                {mouth !== "closed" && (
+                {mouth !== 'closed' && (
                   <img
                     className="mouth-overlay"
                     src={`/sprites/maya-${outfit}-mouth-${mouth}.png`}
@@ -333,39 +372,56 @@ export default function Home() {
               </>
             )}
           </div>
-          {(["closed", "small", "open"] as const).map((state) => (
+          {(['closed', 'small', 'open'] as const).map((state) => (
             <img
               key={`${avatarStyle}-${state}`}
               className="preload"
-              src={avatarStyle === "anime"
-                ? `/sprites/lumi-${outfit}-${state}.png`
-                : state === "closed"
-                  ? `/sprites/maya-${outfit}-base.png`
-                  : `/sprites/maya-${outfit}-mouth-${state}.png`}
+              src={
+                avatarStyle === 'anime'
+                  ? `/sprites/lumi-${outfit}-${state}.png`
+                  : state === 'closed'
+                    ? `/sprites/maya-${outfit}-base.png`
+                    : `/sprites/maya-${outfit}-mouth-${state}.png`
+              }
               alt=""
             />
           ))}
         </div>
 
         <div className="speech-card" aria-live="polite">
-          <div className="sound-bars" aria-hidden="true"><i /><i /><i /><i /></div>
+          <div className="sound-bars" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+          </div>
           <p>{subtitle}</p>
         </div>
       </section>
 
       <section className="controls" aria-label="Conversation controls">
         <div className="primary-control">
-          {status === "connected" ? (
+          {status === 'connected' ? (
             <button className="voice-button stop" onClick={stopSession}>
               <CircleStop size={22} /> End story
             </button>
           ) : (
-            <button className="voice-button" onClick={beginSession} disabled={status === "connecting"}>
+            <button
+              className="voice-button"
+              onClick={beginSession}
+              disabled={status === 'connecting'}
+            >
               <Mic size={22} />
-              {status === "connecting" ? "Connecting…" : status === "error" ? "Try again" : "Start voice chat"}
+              {status === 'connecting'
+                ? 'Connecting…'
+                : status === 'error'
+                  ? 'Try again'
+                  : 'Start voice chat'}
             </button>
           )}
-          <span className="voice-hint"><Headphones size={15} /> Headphones recommended</span>
+          <span className="voice-hint">
+            <Headphones size={15} /> Headphones recommended
+          </span>
         </div>
 
         <form className="text-chat" onSubmit={sendText}>
@@ -375,20 +431,42 @@ export default function Home() {
               id="message"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder={status === "connected" ? "Whisper something to Maya…" : "Start voice chat to unlock messages"}
-              disabled={status !== "connected"}
+              placeholder={
+                status === 'connected'
+                  ? 'Whisper something to Maya…'
+                  : 'Start voice chat to unlock messages'
+              }
+              disabled={status !== 'connected'}
             />
-            <button type="submit" aria-label="Send message" disabled={status !== "connected" || !draft.trim()}>
+            <button
+              type="submit"
+              aria-label="Send message"
+              disabled={status !== 'connected' || !draft.trim()}
+            >
               <Send size={18} />
             </button>
           </div>
         </form>
 
         <div className="quick-actions">
-          <button onClick={() => sendPrompt("Set a cozy scene for us and ask me one playful question.", "Maya is setting the scene…")}>
+          <button
+            onClick={() =>
+              sendPrompt(
+                'Set a cozy scene for us and ask me one playful question.',
+                'Maya is setting the scene…',
+              )
+            }
+          >
             <Heart size={17} /> Cozy scene
           </button>
-          <button onClick={() => sendPrompt("Begin a short magical quest and give me two choices.", "A new quest is unfolding…")}>
+          <button
+            onClick={() =>
+              sendPrompt(
+                'Begin a short magical quest and give me two choices.',
+                'A new quest is unfolding…',
+              )
+            }
+          >
             <WandSparkles size={17} /> Start a quest
           </button>
         </div>
@@ -397,29 +475,42 @@ export default function Home() {
       <aside className="customizer" aria-label="Customize Maya and the scene">
         <div className="customizer-heading">
           <Palette size={19} />
-          <div><strong>Make it yours</strong><span>Change the mood anytime</span></div>
+          <div>
+            <strong>Make it yours</strong>
+            <span>Change the mood anytime</span>
+          </div>
         </div>
 
         <fieldset>
           <legend>Character style</legend>
-          <div className="style-switch" role="group" aria-label="Character style">
+          <div
+            className="style-switch"
+            role="group"
+            aria-label="Character style"
+          >
             <button
               type="button"
-              className={avatarStyle === "anime" ? "selected" : ""}
-              onClick={() => setAvatarStyle("anime")}
-              aria-pressed={avatarStyle === "anime"}
+              className={avatarStyle === 'anime' ? 'selected' : ''}
+              onClick={() => setAvatarStyle('anime')}
+              aria-pressed={avatarStyle === 'anime'}
             >
               <Sparkles size={16} />
-              <span><strong>Anime</strong><small>Best lip sync</small></span>
+              <span>
+                <strong>Anime</strong>
+                <small>Best lip sync</small>
+              </span>
             </button>
             <button
               type="button"
-              className={avatarStyle === "real" ? "selected" : ""}
-              onClick={() => setAvatarStyle("real")}
-              aria-pressed={avatarStyle === "real"}
+              className={avatarStyle === 'real' ? 'selected' : ''}
+              onClick={() => setAvatarStyle('real')}
+              aria-pressed={avatarStyle === 'real'}
             >
               <span className="real-dot" />
-              <span><strong>Real</strong><small>Portrait</small></span>
+              <span>
+                <strong>Real</strong>
+                <small>Portrait</small>
+              </span>
             </button>
           </div>
         </fieldset>
@@ -430,18 +521,23 @@ export default function Home() {
             {outfitOptions.map((option) => (
               <button
                 type="button"
-                className={outfit === option.id ? "selected" : ""}
+                className={outfit === option.id ? 'selected' : ''}
                 key={option.id}
                 onClick={() => setOutfit(option.id)}
                 aria-pressed={outfit === option.id}
               >
                 <img
-                  src={avatarStyle === "anime"
-                    ? `/sprites/lumi-${option.id}-closed.png`
-                    : `/sprites/maya-${option.id}-base.png`}
+                  src={
+                    avatarStyle === 'anime'
+                      ? `/sprites/lumi-${option.id}-closed.png`
+                      : `/sprites/maya-${option.id}-base.png`
+                  }
                   alt=""
                 />
-                <span><strong>{option.label}</strong><small>{option.hint}</small></span>
+                <span>
+                  <strong>{option.label}</strong>
+                  <small>{option.hint}</small>
+                </span>
               </button>
             ))}
           </div>
@@ -455,12 +551,13 @@ export default function Home() {
               return (
                 <button
                   type="button"
-                  className={`${scene === option.id ? "selected" : ""} mini-${option.id}`}
+                  className={`${scene === option.id ? 'selected' : ''} mini-${option.id}`}
                   key={option.id}
                   onClick={() => setScene(option.id)}
                   aria-pressed={scene === option.id}
                 >
-                  <Icon size={19} /><span>{option.label}</span>
+                  <Icon size={19} />
+                  <span>{option.label}</span>
                 </button>
               );
             })}
@@ -469,8 +566,16 @@ export default function Home() {
       </aside>
 
       <footer>
-        <span>Maya is an AI character. Keep your stories kind and imaginative.</span>
-        <a href="https://ai.google.dev/gemini-api/docs/live-api" target="_blank" rel="noreferrer">About Live voice</a>
+        <span>
+          Maya is an AI character. Keep your stories kind and imaginative.
+        </span>
+        <a
+          href="https://ai.google.dev/gemini-api/docs/live-api"
+          target="_blank"
+          rel="noreferrer"
+        >
+          About Live voice
+        </a>
       </footer>
     </main>
   );
