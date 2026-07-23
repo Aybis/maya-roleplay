@@ -24,6 +24,15 @@ type Scene = 'room' | 'cafe' | 'stars';
 type Mouth = 'closed' | 'small' | 'open';
 type AvatarStyle = 'anime' | 'real';
 type Status = 'idle' | 'connecting' | 'connected' | 'error';
+type Emotion =
+  | 'cute'
+  | 'curious'
+  | 'joy'
+  | 'happy'
+  | 'sad'
+  | 'fear'
+  | 'angry'
+  | 'surprised';
 
 const outfitOptions: Array<{ id: Outfit; label: string; hint: string }> = [
   { id: 'cozy', label: 'Cozy knit', hint: 'Soft & comfy' },
@@ -37,11 +46,42 @@ const sceneOptions: Array<{ id: Scene; label: string; icon: typeof Coffee }> = [
   { id: 'stars', label: 'Stargarden', icon: Sparkles },
 ];
 
+const emotionOptions: Array<{
+  id: Emotion;
+  label: string;
+  symbol: string;
+}> = [
+  { id: 'cute', label: 'Cute', symbol: '♡' },
+  { id: 'curious', label: 'Curious', symbol: '?' },
+  { id: 'joy', label: 'Joy', symbol: '✦' },
+  { id: 'happy', label: 'Happy', symbol: '☀' },
+  { id: 'sad', label: 'Sad', symbol: '︵' },
+  { id: 'fear', label: 'Fear', symbol: '!' },
+  { id: 'angry', label: 'Angry', symbol: '⌁' },
+  { id: 'surprised', label: 'Surprise', symbol: '○' },
+];
+
 const starterLines = [
   'I’m right here. Tell me what kind of story you’d like to step into.',
   'Want a cozy chat, a magical quest, or a little mystery tonight?',
   'Your voice can shape our world. Whenever you’re ready, I’m listening.',
 ];
+
+function inferEmotion(text: string): Emotion | null {
+  const line = text.toLowerCase();
+  const cues: Array<[Emotion, string[]]> = [
+    ['surprised', ['wow', 'whoa', 'oh!', 'amazing', 'unbelievable', 'surprise']],
+    ['fear', ['afraid', 'scared', 'terrifying', 'danger', 'careful', 'frightened']],
+    ['angry', ['angry', 'furious', 'unfair', 'how dare', 'annoyed', 'fight']],
+    ['sad', ['sad', 'sorry', 'miss you', 'lonely', 'heartbroken', 'goodbye']],
+    ['joy', ['wonderful', 'fantastic', 'excited', 'hooray', 'adventure', 'magic']],
+    ['happy', ['happy', 'glad', 'love', 'lovely', 'delight', 'smile']],
+    ['curious', ['why', 'how', 'what if', 'wonder', 'mystery', '?']],
+    ['cute', ['cute', 'cozy', 'sweet', 'adorable', 'gentle']],
+  ];
+
+  return cues.find(([, words]) => words.some((word) => line.includes(word)))?.[0] ?? null;
+}
 
 function encodePcm(samples: Float32Array, sourceRate: number) {
   const targetRate = 16000;
@@ -80,6 +120,7 @@ export default function Home() {
   const [status, setStatus] = useState<Status>('idle');
   const [subtitle, setSubtitle] = useState(starterLines[0]);
   const [draft, setDraft] = useState('');
+  const [emotion, setEmotion] = useState<Emotion>('cute');
 
   const sessionRef = useRef<Session | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -90,6 +131,18 @@ export default function Home() {
   const mouthAnimationRef = useRef<number | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const assistantTextRef = useRef('');
+  const emotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showEmotion = (nextEmotion: Emotion, settleAfter = 5200) => {
+    if (emotionTimerRef.current) clearTimeout(emotionTimerRef.current);
+    setEmotion(nextEmotion);
+    if (nextEmotion !== 'cute' && settleAfter > 0) {
+      emotionTimerRef.current = setTimeout(() => {
+        setEmotion('cute');
+        emotionTimerRef.current = null;
+      }, settleAfter);
+    }
+  };
 
   const stopMouthAnimation = () => {
     if (mouthAnimationRef.current !== null)
@@ -152,6 +205,7 @@ export default function Home() {
     nextPlayTimeRef.current = 0;
     setStatus('idle');
     setSubtitle('Our story is paused. I’ll be here when you come back.');
+    showEmotion('sad', 3600);
   };
 
   useEffect(
@@ -162,6 +216,7 @@ export default function Home() {
       audioContextRef.current?.close();
       if (mouthAnimationRef.current !== null)
         cancelAnimationFrame(mouthAnimationRef.current);
+      if (emotionTimerRef.current) clearTimeout(emotionTimerRef.current);
     },
     [],
   );
@@ -208,6 +263,8 @@ export default function Home() {
     if (text) {
       assistantTextRef.current += text;
       setSubtitle(assistantTextRef.current);
+      const inferred = inferEmotion(assistantTextRef.current);
+      if (inferred) showEmotion(inferred);
     }
     if (message.serverContent?.turnComplete) {
       assistantTextRef.current = '';
@@ -218,6 +275,7 @@ export default function Home() {
     try {
       setStatus('connecting');
       setSubtitle('Opening a little doorway between our worlds…');
+      showEmotion('curious', 0);
 
       const tokenResponse = await fetch('/api/token', { method: 'POST' });
       const tokenPayload = (await tokenResponse.json()) as {
@@ -276,6 +334,7 @@ export default function Home() {
             assistantTextRef.current = '';
             setStatus('connected');
             setSubtitle('I can hear you! What adventure shall we begin?');
+            showEmotion('joy');
           },
           onmessage: handleMessage,
           onerror: () => {
@@ -283,6 +342,7 @@ export default function Home() {
             setSubtitle(
               'The connection flickered. Let’s try opening it again.',
             );
+            showEmotion('sad');
           },
           onclose: () => {
             if (sessionRef.current) setStatus('idle');
@@ -317,6 +377,7 @@ export default function Home() {
           ? error.message
           : 'I couldn’t reach the voice realm just yet.',
       );
+      showEmotion('sad');
       streamRef.current?.getTracks().forEach((track) => track.stop());
       sessionRef.current?.close();
     }
@@ -329,6 +390,7 @@ export default function Home() {
     stopPlayback();
     sessionRef.current.sendClientContent({ turns: text, turnComplete: true });
     setSubtitle(`You: ${text}`);
+    showEmotion(inferEmotion(text) ?? 'curious');
     setDraft('');
   };
 
@@ -340,6 +402,7 @@ export default function Home() {
         turnComplete: true,
       });
       setSubtitle(fallback);
+      showEmotion('joy');
     } else {
       setSubtitle(
         'Start the voice chat first, then we can make that part of our story.',
@@ -379,29 +442,39 @@ export default function Home() {
           <div className="name-chip">
             <span /> Maya · 26
           </div>
-          <div className="character-layer">
-            {avatarStyle === 'anime' ? (
-              <img
-                className="character"
-                src={`/sprites/lumi-${outfit}-${mouth}.png`}
-                alt={`Anime Maya wearing her ${outfit} outfit`}
-              />
-            ) : (
-              <>
+          <div
+            className={`character-layer emotion-${emotion}`}
+            aria-label={`Maya feels ${emotion}`}
+          >
+            <div className="character-visual">
+              {avatarStyle === 'anime' ? (
                 <img
                   className="character"
-                  src={`/sprites/maya-${outfit}-base.png`}
-                  alt={`Realistic Maya wearing her ${outfit} outfit`}
+                  src={`/sprites/lumi-${outfit}-${mouth}.png`}
+                  alt={`Anime Maya wearing her ${outfit} outfit`}
                 />
-                {mouth !== 'closed' && (
+              ) : (
+                <>
                   <img
-                    className="mouth-overlay"
-                    src={`/sprites/maya-${outfit}-mouth-${mouth}.png`}
-                    alt=""
+                    className="character"
+                    src={`/sprites/maya-${outfit}-base.png`}
+                    alt={`Realistic Maya wearing her ${outfit} outfit`}
                   />
-                )}
-              </>
-            )}
+                  {mouth !== 'closed' && (
+                    <img
+                      className="mouth-overlay"
+                      src={`/sprites/maya-${outfit}-mouth-${mouth}.png`}
+                      alt=""
+                    />
+                  )}
+                </>
+              )}
+              <div className="emotion-effects" aria-hidden="true">
+                <span className="effect effect-left">✦</span>
+                <span className="effect effect-right">♡</span>
+                <span className="effect effect-cue" />
+              </div>
+            </div>
           </div>
           {(['closed', 'small', 'open'] as const).map((state) => (
             <img
@@ -543,6 +616,24 @@ export default function Home() {
                 <small>Portrait</small>
               </span>
             </button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Expression</legend>
+          <div className="emotion-grid" role="group" aria-label="Maya's emotion">
+            {emotionOptions.map((option) => (
+              <button
+                type="button"
+                className={emotion === option.id ? 'selected' : ''}
+                key={option.id}
+                onClick={() => showEmotion(option.id, 8000)}
+                aria-pressed={emotion === option.id}
+              >
+                <span aria-hidden="true">{option.symbol}</span>
+                {option.label}
+              </button>
+            ))}
           </div>
         </fieldset>
 

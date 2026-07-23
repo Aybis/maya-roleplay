@@ -202,6 +202,10 @@ button { color: inherit; }
 }
 
 .character-layer {
+  --pose-x: 0px;
+  --pose-y: 0px;
+  --pose-r: 0deg;
+  --pose-s: 1;
   position: relative;
   width: min(52vw, 540px);
   height: min(52vw, 540px);
@@ -209,7 +213,65 @@ button { color: inherit; }
   min-height: 420px;
   margin-bottom: 16px;
   filter: drop-shadow(0 24px 26px rgba(62, 51, 94, .18));
+  transform: translate3d(var(--pose-x), var(--pose-y), 0) rotate(var(--pose-r)) scale(var(--pose-s));
+  transform-origin: 50% 82%;
+  transition: transform .72s cubic-bezier(.2, .8, .2, 1), filter .72s ease;
+  will-change: transform;
 }
+
+.character-visual {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 78%;
+}
+
+.emotion-cute { --pose-y: -2px; --pose-r: -1.4deg; --pose-s: 1.01; }
+.emotion-curious { --pose-x: 8px; --pose-y: -5px; --pose-r: 4.5deg; --pose-s: 1.015; }
+.emotion-joy { --pose-y: -12px; --pose-r: -1deg; --pose-s: 1.035; }
+.emotion-happy { --pose-y: -6px; --pose-r: 1.5deg; --pose-s: 1.02; }
+.emotion-sad { --pose-y: 13px; --pose-r: -3deg; --pose-s: .985; filter: saturate(.82) drop-shadow(0 20px 24px rgba(62, 51, 94, .14)); }
+.emotion-fear { --pose-x: -3px; --pose-y: 4px; --pose-r: -1deg; --pose-s: .985; }
+.emotion-angry { --pose-y: 8px; --pose-r: 1deg; --pose-s: 1.025; filter: saturate(1.08) contrast(1.02) drop-shadow(0 24px 26px rgba(92, 48, 62, .2)); }
+.emotion-surprised { --pose-y: -15px; --pose-r: 0deg; --pose-s: 1.04; }
+
+.emotion-cute .character-visual { animation: cute-breathe 4.8s ease-in-out infinite; }
+.emotion-curious .character-visual { animation: curious-listen 3.8s ease-in-out infinite; }
+.emotion-joy .character-visual { animation: joyful-bounce 1.55s cubic-bezier(.45, 0, .2, 1) infinite; }
+.emotion-happy .character-visual { animation: happy-sway 3s ease-in-out infinite; }
+.emotion-sad .character-visual { animation: sad-breathe 4.5s ease-in-out infinite; }
+.emotion-fear .character-visual { animation: fearful-shiver .23s ease-in-out infinite alternate; }
+.emotion-angry .character-visual { animation: angry-breathe 1.8s ease-in-out infinite; }
+.emotion-surprised .character-visual { animation: surprised-recoil 2.8s cubic-bezier(.2, .8, .2, 1) infinite; }
+
+.emotion-effects { position:absolute; inset:0; pointer-events:none; }
+.effect {
+  position:absolute;
+  z-index:3;
+  opacity:0;
+  color:#fff5a8;
+  font:900 28px var(--font-display), sans-serif;
+  text-shadow:0 2px 10px rgba(89,70,132,.22);
+  transition:opacity .4s ease, transform .55s cubic-bezier(.2,.8,.2,1);
+}
+.effect-left { left:24%; top:16%; transform:translate(8px, 10px) scale(.4) rotate(-15deg); }
+.effect-right { right:22%; top:23%; color:#f39aaa; transform:translate(-8px, 10px) scale(.4) rotate(12deg); }
+.effect-cue { right:27%; top:13%; width:18px; height:23px; }
+
+.emotion-cute .effect-right,
+.emotion-happy .effect-right,
+.emotion-joy .effect-left,
+.emotion-surprised .effect-left { opacity:1; transform:translate(0) scale(1) rotate(0); animation:effect-float 2s ease-in-out infinite; }
+.emotion-joy .effect-right { opacity:1; transform:translate(0) scale(1.15) rotate(0); animation:effect-float 1.7s .2s ease-in-out infinite; }
+.emotion-curious .effect-cue::before { content:"?"; color:#8e7acb; font:900 30px var(--font-display), sans-serif; }
+.emotion-fear .effect-cue::before { content:""; display:block; width:10px; height:17px; border-radius:70% 35% 60% 45%; background:#9bd9e7; transform:rotate(18deg); }
+.emotion-angry .effect-cue::before { content:"⌁"; color:#d85f72; font:900 34px var(--font-display), sans-serif; }
+.emotion-sad .effect-cue::before { content:""; display:block; width:9px; height:16px; border-radius:70% 35% 60% 45%; background:#77c6df; transform:rotate(15deg); animation:tear-drop 2.2s ease-in infinite; }
+.emotion-surprised .effect-cue::before { content:"!"; color:#d9a64f; font:900 31px var(--font-display), sans-serif; }
+.emotion-curious .effect-cue,
+.emotion-fear .effect-cue,
+.emotion-angry .effect-cue,
+.emotion-sad .effect-cue,
+.emotion-surprised .effect-cue { opacity:1; transform:translateY(0) scale(1); }
 
 .character,
 .mouth-overlay {
@@ -362,6 +424,29 @@ legend { margin-bottom:10px; color:#6e647f; font-size:11px; font-weight:900; let
 .option-grid { display:grid; gap:9px; }
 .option-grid button { cursor:pointer; }
 
+.emotion-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:7px; }
+.emotion-grid button {
+  min-width:0;
+  min-height:52px;
+  padding:6px 2px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  background:#fff;
+  color:#776d88;
+  cursor:pointer;
+  font-size:9px;
+  font-weight:800;
+  transition:transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.emotion-grid button:hover { transform:translateY(-2px); border-color:#c6b9e1; }
+.emotion-grid button.selected { border-color:#9e8cd1; background:#f2eefb; color:#6754a5; box-shadow:0 0 0 2px #ece6fa; }
+.emotion-grid button span { font-size:18px; line-height:1; }
+
 .style-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -450,6 +535,16 @@ footer a { color:#7564ae; text-decoration:none; font-weight:800; }
 
 @keyframes pulse { 50% { opacity:.35; } }
 @keyframes bars { 0%,100% { transform:scaleY(.65); } 50% { transform:scaleY(1.25); } }
+@keyframes cute-breathe { 0%,100% { transform:translateY(0) scale(1); } 50% { transform:translateY(-3px) scale(1.006); } }
+@keyframes curious-listen { 0%,100% { transform:rotate(0); } 45% { transform:rotate(1.8deg); } 70% { transform:rotate(1.2deg) translateY(-2px); } }
+@keyframes joyful-bounce { 0%,100% { transform:translateY(0) rotate(0); } 42% { transform:translateY(-8px) rotate(1.5deg); } 62% { transform:translateY(-3px) rotate(-1deg); } }
+@keyframes happy-sway { 0%,100% { transform:rotate(-.7deg) translateY(0); } 50% { transform:rotate(.8deg) translateY(-4px); } }
+@keyframes sad-breathe { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px) scale(.997); } }
+@keyframes fearful-shiver { from { transform:translateX(-1.4px) rotate(-.18deg); } to { transform:translateX(1.4px) rotate(.18deg); } }
+@keyframes angry-breathe { 0%,100% { transform:translateY(0) scaleX(1); } 50% { transform:translateY(-2px) scaleX(1.008); } }
+@keyframes surprised-recoil { 0%,18%,100% { transform:translateY(0) scale(1); } 7% { transform:translateY(-5px) scale(1.018); } }
+@keyframes effect-float { 0%,100% { margin-top:0; } 50% { margin-top:-7px; } }
+@keyframes tear-drop { 0% { opacity:0; transform:translateY(-4px) rotate(15deg) scale(.7); } 25%,70% { opacity:1; } 100% { opacity:0; transform:translateY(16px) rotate(15deg) scale(1); } }
 
 @media (max-width: 1050px) {
   .app-shell {
