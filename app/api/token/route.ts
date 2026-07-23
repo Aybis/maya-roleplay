@@ -27,7 +27,11 @@ export async function POST() {
       },
     });
 
-    return Response.json({ token: token.name }, { headers: { "Cache-Control": "no-store" } });
+    const useElevenLabs = process.env.ELEVENLABS_ENABLED === "true";
+    return Response.json(
+      { token: token.name, useElevenLabs },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     console.error("Unable to create Gemini token", error);
     return Response.json({ error: "The voice gateway is unavailable right now." }, { status: 502 });

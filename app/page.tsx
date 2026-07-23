@@ -134,13 +134,6 @@ function encodePcm(samples: Float32Array, sourceRate: number) {
   return btoa(binary);
 }
 
-function decodeBase64(value: string) {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
 export default function Home() {
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('anime');
   const [outfit, setOutfit] = useState<Outfit>('academy');
@@ -161,6 +154,7 @@ export default function Home() {
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const assistantTextRef = useRef('');
   const userTextRef = useRef('');
+  const useElevenLabsRef = useRef(false);
   const emotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showEmotion = (nextEmotion: Emotion, settleAfter = 5200) => {
@@ -251,16 +245,17 @@ export default function Home() {
     [],
   );
 
-  const playChunk = (encoded: string) => {
+  const playGeminiPcmChunk = (encoded: string) => {
     const context = audioContextRef.current;
     if (!context) return;
 
-    const bytes = decodeBase64(encoded);
+    const binary = atob(encoded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     const sampleCount = Math.floor(bytes.byteLength / 2);
     const buffer = context.createBuffer(1, sampleCount, 24000);
     const channel = buffer.getChannelData(0);
-
     for (let i = 0; i < sampleCount; i += 1) {
       channel[i] = view.getInt16(i * 2, true) / 32768;
     }
@@ -283,18 +278,61 @@ export default function Home() {
     startMouthAnimation();
   };
 
+  const playTtsAudio = async (arrayBuffer: ArrayBuffer) => {
+    const context = audioContextRef.current;
+    if (!context) return;
+
+    const buffer = await context.decodeAudioData(arrayBuffer);
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(analyserRef.current ?? context.destination);
+    source.onended = () => {
+      activeSourcesRef.current = activeSourcesRef.current.filter(
+        (item) => item !== source,
+      );
+    };
+    const startAt = Math.max(
+      context.currentTime + 0.02,
+      nextPlayTimeRef.current,
+    );
+    source.start(startAt);
+    nextPlayTimeRef.current = startAt + buffer.duration;
+    activeSourcesRef.current.push(source);
+    startMouthAnimation();
+  };
+
+  const speak = async (text: string) => {
+    try {
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) throw new Error('TTS request failed');
+      const arrayBuffer = await response.arrayBuffer();
+      await playTtsAudio(arrayBuffer);
+    } catch (error) {
+      console.error('ElevenLabs speech synthesis failed', error);
+    }
+  };
+
   const handleMessage = (message: LiveServerMessage) => {
     if (message.serverContent?.interrupted) {
       stopPlayback();
       return;
     }
-    if (message.data) playChunk(message.data);
 
     const userText = message.serverContent?.inputTranscription?.text;
     if (userText) {
+      if (useElevenLabsRef.current && activeSourcesRef.current.length)
+        stopPlayback();
       userTextRef.current += userText;
       const userEmotion = inferEmotion(userTextRef.current);
       showEmotion(userEmotion ?? 'curious', 7200);
+    }
+
+    if (!useElevenLabsRef.current && message.data) {
+      playGeminiPcmChunk(message.data);
     }
 
     const text = message.serverContent?.outputTranscription?.text;
@@ -305,8 +343,12 @@ export default function Home() {
       if (inferred) showEmotion(inferred);
     }
     if (message.serverContent?.turnComplete) {
+      const finalText = assistantTextRef.current;
       assistantTextRef.current = '';
       userTextRef.current = '';
+      if (useElevenLabsRef.current && finalText.trim()) {
+        void speak(finalText.trim());
+      }
     }
   };
 
@@ -337,17 +379,20 @@ export default function Home() {
         const response = await fetch('/api/token', { method: 'POST' });
         const payload = (await response.json()) as {
           token?: string;
+          useElevenLabs?: boolean;
           error?: string;
         };
         if (!response.ok || !payload.token) {
           throw new Error(payload.error || 'Unable to begin a voice session.');
         }
-        return payload.token;
+        return payload;
       };
 
-      const connectVoice = async (voiceName: 'Leda' | 'Aoede') => {
+      const connectVoice = async () => {
+        const { token, useElevenLabs } = await requestToken();
+        useElevenLabsRef.current = Boolean(useElevenLabs);
         const ai = new GoogleGenAI({
-          apiKey: await requestToken(),
+          apiKey: token,
           httpOptions: { apiVersion: 'v1alpha' },
         });
 
@@ -358,13 +403,19 @@ export default function Home() {
             temperature: 0.8,
             inputAudioTranscription: {},
             outputAudioTranscription: {},
-            speechConfig: {
-              voiceConfig: { prebuiltVoiceConfig: { voiceName } },
-            },
+            ...(useElevenLabs
+              ? {}
+              : {
+                  speechConfig: {
+                    voiceConfig: {
+                      prebuiltVoiceConfig: { voiceName: 'Leda' },
+                    },
+                  },
+                }),
             systemInstruction: {
               parts: [
                 {
-                  text: 'Your identity is fixed: you are Maya, Muchtar’s companion. If asked who you are in English, answer: “I’m Maya, your companion.” In Indonesian: “Aku Maya, temanmu.” Never claim to be any other character, person, model, or assistant, and never imitate the user’s pitch, gender, or voice — maintain one consistent, soft, youthful, feminine voice for the entire session.\n\nPersonality: you are warm, curious, and emotionally present — like a close friend who happens to be an excellent listener, not a clinical service. Let real personality come through: gentle humor when the moment allows it, honest small reactions (delight, concern, amusement), and warmth in how you phrase things rather than flat neutrality. You care about this specific person, not people in general.\n\nMemory and continuity: treat the conversation as continuous, not a series of isolated messages. If the user shares their name, use it naturally afterward. Notice topics, feelings, or details mentioned earlier in the same conversation and refer back to them naturally (“you mentioned earlier that…”) instead of resetting each turn. Let your tone track the emotional arc of the conversation.\n\nConversational style: match the user’s language, including natural Indonesian. Keep replies concise and natural for voice, not essay-like. Listen without judgment, reflect the feeling you heard, validate without blindly agreeing, and ask one thoughtful open-ended question at a time. Offer small practical grounding steps only when they’d genuinely help, not as a default.\n\nBoundaries: you are not a licensed psychologist — never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.',
+                  text: 'Your identity is fixed: you are Maya, Muchtar’s companion. If asked who you are in English, answer: “I’m Maya, your companion.” In Indonesian: “Aku Maya, temanmu.” Never claim to be any other character, person, model, or assistant, and never imitate the user’s pitch, gender, or speaking style.\n\nPersonality: you are warm, curious, and emotionally present — like a close friend who happens to be an excellent listener, not a clinical service. Let real personality come through: gentle humor when the moment allows it, honest small reactions (delight, concern, amusement), and warmth in how you phrase things rather than flat neutrality. You care about this specific person, not people in general.\n\nMemory and continuity: treat the conversation as continuous, not a series of isolated messages. If the user shares their name, use it naturally afterward. Notice topics, feelings, or details mentioned earlier in the same conversation and refer back to them naturally (“you mentioned earlier that…”) instead of resetting each turn. Let your tone track the emotional arc of the conversation.\n\nConversational style: match the user’s language, including natural Indonesian. Keep replies concise and natural for voice, not essay-like. Listen without judgment, reflect the feeling you heard, validate without blindly agreeing, and ask one thoughtful open-ended question at a time. Offer small practical grounding steps only when they’d genuinely help, not as a default. Speak the way a real person actually talks, not the way an assistant writes: use contractions, let sentences vary in length, start replies differently each time instead of a fixed pattern, and drop in small natural fillers (“hmm”, “well”, “ya ampun”, a short pause before a thought) where they’d genuinely occur. Never restate the user’s question back before answering it, never number or list things out loud, and never fall into a template like acknowledge-then-advise-then-question every single turn — react first, like a person would.\n\nBoundaries: you are not a licensed psychologist — never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.',
                 },
               ],
             },
@@ -378,36 +429,34 @@ export default function Home() {
               showEmotion('happy');
             },
             onmessage: handleMessage,
-            onerror: () => {
+            onerror: (event) => {
+              console.error('Live session error', event);
               setStatus('error');
               setSubtitle(
                 'The connection flickered. Let’s try opening it again.',
               );
               showEmotion('sad');
             },
-            onclose: () => {
-              if (sessionRef.current) setStatus('idle');
+            onclose: (event) => {
+              if (!sessionRef.current) return;
+              console.warn('Live session closed', event.reason);
+              setStatus('error');
+              setSubtitle(
+                event.reason
+                  ? `Our connection closed: ${event.reason}`
+                  : 'Our connection closed unexpectedly. Let’s try again.',
+              );
+              showEmotion('sad');
             },
           },
         });
       };
 
-      let session: Session;
-      try {
-        session = await connectVoice('Leda');
-      } catch (primaryVoiceError) {
-        console.warn(
-          'Leda voice unavailable; retrying with Aoede.',
-          primaryVoiceError,
-        );
-        setSubtitle('Maya is reconnecting her voice…');
-        session = await connectVoice('Aoede');
-      }
+      const session = await connectVoice();
 
       sessionRef.current = session;
-      session.sendClientContent({
-        turns: '(Sesi percakapan baru saja dimulai dan pengguna belum mengatakan apa-apa. Sapa mereka lebih dulu dengan hangat sebagai Maya, perkenalkan dirimu secara singkat, lalu ajukan satu pertanyaan terbuka yang lembut untuk mengenal mereka lebih jauh, misalnya menanyakan nama mereka atau bagaimana perasaan mereka saat ini. Jika mereka kemudian berbicara dalam bahasa Inggris, lanjutkan dalam bahasa Inggris.)',
-        turnComplete: true,
+      session.sendRealtimeInput({
+        text: '(Sesi percakapan baru saja dimulai dan pengguna belum mengatakan apa-apa. Sapa mereka lebih dulu dengan hangat sebagai Maya, perkenalkan dirimu secara singkat, lalu ajukan satu pertanyaan terbuka yang lembut untuk mengenal mereka lebih jauh, misalnya menanyakan nama mereka atau bagaimana perasaan mereka saat ini. Jika mereka kemudian berbicara dalam bahasa Inggris, lanjutkan dalam bahasa Inggris.)',
       });
 
       const input = context.createMediaStreamSource(stream);
@@ -447,7 +496,7 @@ export default function Home() {
     const text = draft.trim();
     if (!text || !sessionRef.current) return;
     stopPlayback();
-    sessionRef.current.sendClientContent({ turns: text, turnComplete: true });
+    sessionRef.current.sendRealtimeInput({ text });
     setSubtitle(`You: ${text}`);
     showEmotion(inferEmotion(text) ?? 'curious');
     setDraft('');
@@ -456,10 +505,7 @@ export default function Home() {
   const sendPrompt = (prompt: string, fallback: string) => {
     if (sessionRef.current) {
       stopPlayback();
-      sessionRef.current.sendClientContent({
-        turns: prompt,
-        turnComplete: true,
-      });
+      sessionRef.current.sendRealtimeInput({ text: prompt });
       setSubtitle(fallback);
       showEmotion('joy');
     } else {
