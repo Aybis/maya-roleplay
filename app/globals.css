@@ -419,6 +419,21 @@ button { color: inherit; }
 .customizer-heading strong { color:var(--ink); font:700 16px var(--font-display), sans-serif; }
 .customizer-heading span { color:var(--muted); font-size:11px; }
 
+.persona-card {
+  margin:-8px 0 22px;
+  padding:13px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  border:1px solid #e8dff1;
+  border-radius:15px;
+  background:linear-gradient(145deg, #faf7ff, #fff9f5);
+  color:#9a6c8d;
+}
+.persona-card div { display:flex; flex-direction:column; gap:3px; }
+.persona-card strong { color:#594d70; font-size:12px; }
+.persona-card span { color:#81778f; font-size:10px; line-height:1.45; }
+
 fieldset { border:0; padding:0; margin:0 0 26px; min-width:0; }
 legend { margin-bottom:10px; color:#6e647f; font-size:11px; font-weight:900; letter-spacing:.07em; text-transform:uppercase; }
 .option-grid { display:grid; gap:9px; }

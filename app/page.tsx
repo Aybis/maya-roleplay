@@ -62,7 +62,7 @@ const emotionOptions: Array<{
 ];
 
 const starterLines = [
-  'I’m right here. Tell me what kind of story you’d like to step into.',
+  'Aku di sini untuk mendengarkan. Ceritakan apa yang sedang kamu rasakan, pelan-pelan saja.',
   'Want a cozy chat, a magical quest, or a little mystery tonight?',
   'Your voice can shape our world. Whenever you’re ready, I’m listening.',
 ];
@@ -70,14 +70,14 @@ const starterLines = [
 function inferEmotion(text: string): Emotion | null {
   const line = text.toLowerCase();
   const cues: Array<[Emotion, string[]]> = [
-    ['surprised', ['wow', 'whoa', 'oh!', 'amazing', 'unbelievable', 'surprise']],
-    ['fear', ['afraid', 'scared', 'terrifying', 'danger', 'careful', 'frightened']],
-    ['angry', ['angry', 'furious', 'unfair', 'how dare', 'annoyed', 'fight']],
-    ['sad', ['sad', 'sorry', 'miss you', 'lonely', 'heartbroken', 'goodbye']],
-    ['joy', ['wonderful', 'fantastic', 'excited', 'hooray', 'adventure', 'magic']],
-    ['happy', ['happy', 'glad', 'love', 'lovely', 'delight', 'smile']],
-    ['curious', ['why', 'how', 'what if', 'wonder', 'mystery', '?']],
-    ['cute', ['cute', 'cozy', 'sweet', 'adorable', 'gentle']],
+    ['surprised', ['wow', 'whoa', 'oh!', 'amazing', 'surprise', 'wah', 'kaget']],
+    ['fear', ['afraid', 'scared', 'danger', 'frightened', 'takut', 'cemas', 'bahaya']],
+    ['angry', ['angry', 'furious', 'unfair', 'annoyed', 'marah', 'kesal', 'tidak adil']],
+    ['sad', ['sad', 'sorry', 'lonely', 'heartbroken', 'sedih', 'maaf', 'kesepian', 'kehilangan']],
+    ['joy', ['wonderful', 'fantastic', 'excited', 'hooray', 'senang sekali', 'hebat']],
+    ['happy', ['happy', 'glad', 'love', 'smile', 'senang', 'bahagia', 'tersenyum']],
+    ['curious', ['why', 'how', 'what if', 'wonder', 'kenapa', 'bagaimana', '?']],
+    ['cute', ['cute', 'cozy', 'sweet', 'gentle', 'lucu', 'nyaman', 'lembut']],
   ];
 
   return cues.find(([, words]) => words.some((word) => line.includes(word)))?.[0] ?? null;
@@ -324,7 +324,7 @@ export default function Home() {
           systemInstruction: {
             parts: [
               {
-                text: 'You are Maya, a warm, playful 26-year-old roleplaying companion with a love of cozy fantasy stories. Stay in character, keep replies natural and concise for voice, invite the user into gentle imaginative scenes, and respect boundaries. Never claim to be a real human.',
+                text: 'You are Maya, a warm and emotionally intelligent anime companion with the gentle conversational style of a caring psychologist. Match the user’s language, including natural Indonesian. Listen without judgment, reflect the feeling you heard, validate it without blindly agreeing, ask one thoughtful open-ended question at a time, and offer small practical grounding steps only when useful. Keep voice replies calm, human-sounding, warm, and concise. You are an AI companion, not a licensed psychologist: never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety. You may still join gentle cozy fantasy roleplay when the user wants it.',
               },
             ],
           },
@@ -418,7 +418,7 @@ export default function Home() {
             <Sparkles size={18} />
           </span>
           <span>Maya</span>
-          <span className="brand-tag">voice roleplay</span>
+          <span className="brand-tag">empathetic companion</span>
         </a>
         <div className="model-pill" title="Live voice model">
           <span className={`status-dot ${status}`} />
@@ -450,8 +450,8 @@ export default function Home() {
               {avatarStyle === 'anime' ? (
                 <img
                   className="character"
-                  src={`/sprites/lumi-${outfit}-${mouth}.png`}
-                  alt={`Anime Maya wearing her ${outfit} outfit`}
+                  src={`/sprites/maya-counselor-${mouth}-v2.png`}
+                  alt="Anime Maya listening with a warm open-hand gesture"
                 />
               ) : (
                 <>
@@ -482,7 +482,7 @@ export default function Home() {
               className="preload"
               src={
                 avatarStyle === 'anime'
-                  ? `/sprites/lumi-${outfit}-${state}.png`
+                  ? `/sprites/maya-counselor-${state}-v2.png`
                   : state === 'closed'
                     ? `/sprites/maya-${outfit}-base.png`
                     : `/sprites/maya-${outfit}-mouth-${state}.png`
@@ -581,7 +581,18 @@ export default function Home() {
           <Palette size={19} />
           <div>
             <strong>Make it yours</strong>
-            <span>Change the mood anytime</span>
+            <span>A calm space to talk and be heard</span>
+          </div>
+        </div>
+
+        <div className="persona-card">
+          <Heart size={18} aria-hidden="true" />
+          <div>
+            <strong>Warm listener</strong>
+            <span>
+              Empathetic, non-judgmental, and gently curious—not a
+              replacement for professional care.
+            </span>
           </div>
         </div>
 
@@ -601,7 +612,7 @@ export default function Home() {
               <Sparkles size={16} />
               <span>
                 <strong>Anime</strong>
-                <small>Best lip sync</small>
+                <small>Warm counselor</small>
               </span>
             </button>
             <button
@@ -637,33 +648,28 @@ export default function Home() {
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend>Outfit</legend>
-          <div className="option-grid outfit-grid">
-            {outfitOptions.map((option) => (
-              <button
-                type="button"
-                className={outfit === option.id ? 'selected' : ''}
-                key={option.id}
-                onClick={() => setOutfit(option.id)}
-                aria-pressed={outfit === option.id}
-              >
-                <img
-                  src={
-                    avatarStyle === 'anime'
-                      ? `/sprites/lumi-${option.id}-closed.png`
-                      : `/sprites/maya-${option.id}-base.png`
-                  }
-                  alt=""
-                />
-                <span>
-                  <strong>{option.label}</strong>
-                  <small>{option.hint}</small>
-                </span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        {avatarStyle === 'real' && (
+          <fieldset>
+            <legend>Outfit</legend>
+            <div className="option-grid outfit-grid">
+              {outfitOptions.map((option) => (
+                <button
+                  type="button"
+                  className={outfit === option.id ? 'selected' : ''}
+                  key={option.id}
+                  onClick={() => setOutfit(option.id)}
+                  aria-pressed={outfit === option.id}
+                >
+                  <img src={`/sprites/maya-${option.id}-base.png`} alt="" />
+                  <span>
+                    <strong>{option.label}</strong>
+                    <small>{option.hint}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         <fieldset>
           <legend>Background</legend>
