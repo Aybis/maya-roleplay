@@ -283,17 +283,6 @@ export default function Home() {
       setSubtitle('Opening a little doorway between our worlds…');
       showEmotion('curious', 0);
 
-      const tokenResponse = await fetch('/api/token', { method: 'POST' });
-      const tokenPayload = (await tokenResponse.json()) as {
-        token?: string;
-        error?: string;
-      };
-      if (!tokenResponse.ok || !tokenPayload.token) {
-        throw new Error(
-          tokenPayload.error || 'Unable to begin a voice session.',
-        );
-      }
-
       const context = new AudioContext();
       await context.resume();
       audioContextRef.current = context;
@@ -311,31 +300,43 @@ export default function Home() {
       });
       streamRef.current = stream;
 
-      const ai = new GoogleGenAI({
-        apiKey: tokenPayload.token,
-        httpOptions: { apiVersion: 'v1alpha' },
-      });
+      const requestToken = async () => {
+        const response = await fetch('/api/token', { method: 'POST' });
+        const payload = (await response.json()) as {
+          token?: string;
+          error?: string;
+        };
+        if (!response.ok || !payload.token) {
+          throw new Error(payload.error || 'Unable to begin a voice session.');
+        }
+        return payload.token;
+      };
 
-      const session = await ai.live.connect({
-        model: 'gemini-3.1-flash-live-preview',
-        config: {
-          responseModalities: [Modality.AUDIO],
-          temperature: 0.8,
-          enableAffectiveDialog: true,
-          inputAudioTranscription: {},
-          outputAudioTranscription: {},
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Despina' } },
+      const connectVoice = async (voiceName: 'Despina' | 'Leda') => {
+        const ai = new GoogleGenAI({
+          apiKey: await requestToken(),
+          httpOptions: { apiVersion: 'v1alpha' },
+        });
+
+        return ai.live.connect({
+          model: 'gemini-3.1-flash-live-preview',
+          config: {
+            responseModalities: [Modality.AUDIO],
+            temperature: 0.8,
+            inputAudioTranscription: {},
+            outputAudioTranscription: {},
+            speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName } },
+            },
+            systemInstruction: {
+              parts: [
+                {
+                  text: 'Your identity is fixed: you are Maya, Muchtar’s virtual assistant. If asked who you are in English, answer clearly: “I’m Maya, Muchtar’s virtual assistant.” If asked in Indonesian, answer: “Aku Maya, asisten virtual Muchtar.” Never claim to be any other character, person, or assistant. Maintain one consistent soft, youthful, feminine vocal identity for the entire session. Never imitate the user’s pitch, gender, or voice. You are warm and emotionally intelligent, with the gentle conversational style of a caring psychologist. Match the user’s language, including natural Indonesian. Listen without judgment, reflect the feeling you heard, validate it without blindly agreeing, ask one thoughtful open-ended question at a time, and offer small practical grounding steps only when useful. Keep replies calm, warm, and concise. You are not a licensed psychologist: never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.',
+                },
+              ],
+            },
           },
-          systemInstruction: {
-            parts: [
-              {
-                text: 'You are Maya, a warm and emotionally intelligent anime companion with the gentle conversational style of a caring psychologist. Match the user’s language, including natural Indonesian. Listen without judgment, reflect the feeling you heard, validate it without blindly agreeing, ask one thoughtful open-ended question at a time, and offer small practical grounding steps only when useful. Keep voice replies calm, human-sounding, warm, and concise. You are an AI companion, not a licensed psychologist: never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety. You may still join gentle cozy fantasy roleplay when the user wants it.',
-              },
-            ],
-          },
-        },
-        callbacks: {
+          callbacks: {
           onopen: () => {
             assistantTextRef.current = '';
             userTextRef.current = '';
@@ -354,8 +355,18 @@ export default function Home() {
           onclose: () => {
             if (sessionRef.current) setStatus('idle');
           },
-        },
-      });
+          },
+        });
+      };
+
+      let session: Session;
+      try {
+        session = await connectVoice('Despina');
+      } catch (primaryVoiceError) {
+        console.warn('Despina voice unavailable; retrying with Leda.', primaryVoiceError);
+        setSubtitle('Maya is reconnecting her voice…');
+        session = await connectVoice('Leda');
+      }
 
       sessionRef.current = session;
       const input = context.createMediaStreamSource(stream);
