@@ -88,6 +88,8 @@ export default function Home() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const nextPlayTimeRef = useRef(0);
   const mouthAnimationRef = useRef<number | null>(null);
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const assistantTextRef = useRef('');
 
   const stopMouthAnimation = () => {
     if (mouthAnimationRef.current !== null)
@@ -121,6 +123,20 @@ export default function Home() {
     mouthAnimationRef.current = requestAnimationFrame(animate);
   };
 
+  const stopPlayback = () => {
+    for (const source of activeSourcesRef.current) {
+      try {
+        source.stop();
+      } catch {
+        // already finished playing
+      }
+    }
+    activeSourcesRef.current = [];
+    nextPlayTimeRef.current = audioContextRef.current?.currentTime ?? 0;
+    assistantTextRef.current = '';
+    stopMouthAnimation();
+  };
+
   const stopSession = () => {
     processorRef.current?.disconnect();
     processorRef.current = null;
@@ -129,11 +145,11 @@ export default function Home() {
     sessionRef.current?.sendRealtimeInput({ audioStreamEnd: true });
     sessionRef.current?.close();
     sessionRef.current = null;
+    stopPlayback();
     audioContextRef.current?.close();
     audioContextRef.current = null;
     analyserRef.current = null;
     nextPlayTimeRef.current = 0;
-    stopMouthAnimation();
     setStatus('idle');
     setSubtitle('Our story is paused. I’ll be here when you come back.');
   };
@@ -167,22 +183,34 @@ export default function Home() {
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.connect(analyserRef.current ?? context.destination);
+    source.onended = () => {
+      activeSourcesRef.current = activeSourcesRef.current.filter(
+        (item) => item !== source,
+      );
+    };
     const startAt = Math.max(
       context.currentTime + 0.035,
       nextPlayTimeRef.current,
     );
     source.start(startAt);
     nextPlayTimeRef.current = startAt + buffer.duration;
+    activeSourcesRef.current.push(source);
     startMouthAnimation();
   };
 
   const handleMessage = (message: LiveServerMessage) => {
+    if (message.serverContent?.interrupted) {
+      stopPlayback();
+      return;
+    }
     if (message.data) playChunk(message.data);
     const text = message.serverContent?.outputTranscription?.text;
-    if (text?.trim()) setSubtitle(text.trim());
-    if (message.serverContent?.interrupted) {
-      nextPlayTimeRef.current = 0;
-      stopMouthAnimation();
+    if (text) {
+      assistantTextRef.current += text;
+      setSubtitle(assistantTextRef.current);
+    }
+    if (message.serverContent?.turnComplete) {
+      assistantTextRef.current = '';
     }
   };
 
@@ -245,6 +273,7 @@ export default function Home() {
         },
         callbacks: {
           onopen: () => {
+            assistantTextRef.current = '';
             setStatus('connected');
             setSubtitle('I can hear you! What adventure shall we begin?');
           },
@@ -297,6 +326,7 @@ export default function Home() {
     event.preventDefault();
     const text = draft.trim();
     if (!text || !sessionRef.current) return;
+    stopPlayback();
     sessionRef.current.sendClientContent({ turns: text, turnComplete: true });
     setSubtitle(`You: ${text}`);
     setDraft('');
@@ -304,6 +334,7 @@ export default function Home() {
 
   const sendPrompt = (prompt: string, fallback: string) => {
     if (sessionRef.current) {
+      stopPlayback();
       sessionRef.current.sendClientContent({
         turns: prompt,
         turnComplete: true,
