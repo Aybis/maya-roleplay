@@ -66,17 +66,50 @@ const starterLines = [
 function inferEmotion(text: string): Emotion | null {
   const line = text.toLowerCase();
   const cues: Array<[Emotion, string[]]> = [
-    ['surprised', ['wow', 'whoa', 'oh!', 'amazing', 'surprise', 'wah', 'kaget']],
-    ['fear', ['afraid', 'scared', 'danger', 'frightened', 'takut', 'cemas', 'bahaya']],
-    ['angry', ['angry', 'furious', 'unfair', 'annoyed', 'marah', 'kesal', 'tidak adil']],
-    ['sad', ['sad', 'sorry', 'lonely', 'heartbroken', 'sedih', 'maaf', 'kesepian', 'kehilangan']],
-    ['joy', ['wonderful', 'fantastic', 'excited', 'hooray', 'senang sekali', 'hebat']],
-    ['happy', ['happy', 'glad', 'love', 'smile', 'senang', 'bahagia', 'tersenyum']],
-    ['curious', ['why', 'how', 'what if', 'wonder', 'kenapa', 'bagaimana', '?']],
+    [
+      'surprised',
+      ['wow', 'whoa', 'oh!', 'amazing', 'surprise', 'wah', 'kaget'],
+    ],
+    [
+      'fear',
+      ['afraid', 'scared', 'danger', 'frightened', 'takut', 'cemas', 'bahaya'],
+    ],
+    [
+      'angry',
+      ['angry', 'furious', 'unfair', 'annoyed', 'marah', 'kesal', 'tidak adil'],
+    ],
+    [
+      'sad',
+      [
+        'sad',
+        'sorry',
+        'lonely',
+        'heartbroken',
+        'sedih',
+        'maaf',
+        'kesepian',
+        'kehilangan',
+      ],
+    ],
+    [
+      'joy',
+      ['wonderful', 'fantastic', 'excited', 'hooray', 'senang sekali', 'hebat'],
+    ],
+    [
+      'happy',
+      ['happy', 'glad', 'love', 'smile', 'senang', 'bahagia', 'tersenyum'],
+    ],
+    [
+      'curious',
+      ['why', 'how', 'what if', 'wonder', 'kenapa', 'bagaimana', '?'],
+    ],
     ['cute', ['cute', 'cozy', 'sweet', 'gentle', 'lucu', 'nyaman', 'lembut']],
   ];
 
-  return cues.find(([, words]) => words.some((word) => line.includes(word)))?.[0] ?? null;
+  return (
+    cues.find(([, words]) => words.some((word) => line.includes(word)))?.[0] ??
+    null
+  );
 }
 
 function encodePcm(samples: Float32Array, sourceRate: number) {
@@ -337,24 +370,26 @@ export default function Home() {
             },
           },
           callbacks: {
-          onopen: () => {
-            assistantTextRef.current = '';
-            userTextRef.current = '';
-            setStatus('connected');
-            setSubtitle('Aku mendengarkan. Ceritakan apa pun yang ingin kamu bagi.');
-            showEmotion('happy');
-          },
-          onmessage: handleMessage,
-          onerror: () => {
-            setStatus('error');
-            setSubtitle(
-              'The connection flickered. Let’s try opening it again.',
-            );
-            showEmotion('sad');
-          },
-          onclose: () => {
-            if (sessionRef.current) setStatus('idle');
-          },
+            onopen: () => {
+              assistantTextRef.current = '';
+              userTextRef.current = '';
+              setStatus('connected');
+              setSubtitle(
+                'Aku mendengarkan. Ceritakan apa pun yang ingin kamu bagi.',
+              );
+              showEmotion('happy');
+            },
+            onmessage: handleMessage,
+            onerror: () => {
+              setStatus('error');
+              setSubtitle(
+                'The connection flickered. Let’s try opening it again.',
+              );
+              showEmotion('sad');
+            },
+            onclose: () => {
+              if (sessionRef.current) setStatus('idle');
+            },
           },
         });
       };
@@ -363,7 +398,10 @@ export default function Home() {
       try {
         session = await connectVoice('Despina');
       } catch (primaryVoiceError) {
-        console.warn('Despina voice unavailable; retrying with Leda.', primaryVoiceError);
+        console.warn(
+          'Despina voice unavailable; retrying with Leda.',
+          primaryVoiceError,
+        );
         setSubtitle('Maya is reconnecting her voice…');
         session = await connectVoice('Leda');
       }
@@ -608,8 +646,8 @@ export default function Home() {
           <div>
             <strong>Warm listener</strong>
             <span>
-              Empathetic, non-judgmental, and gently curious—not a
-              replacement for professional care.
+              Empathetic, non-judgmental, and gently curious—not a replacement
+              for professional care.
             </span>
           </div>
         </div>
