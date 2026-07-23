@@ -439,28 +439,36 @@ legend { margin-bottom:10px; color:#6e647f; font-size:11px; font-weight:900; let
 .option-grid { display:grid; gap:9px; }
 .option-grid button { cursor:pointer; }
 
-.emotion-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:7px; }
-.emotion-grid button {
-  min-width:0;
-  min-height:52px;
-  padding:6px 2px;
-  border:1px solid var(--line);
-  border-radius:12px;
+.auto-emotion-card {
+  margin:0 0 24px;
+  padding:12px 13px;
   display:flex;
-  flex-direction:column;
   align-items:center;
-  justify-content:center;
-  gap:2px;
+  gap:10px;
+  border:1px solid #e5def0;
+  border-radius:14px;
   background:#fff;
-  color:#776d88;
-  cursor:pointer;
-  font-size:9px;
-  font-weight:800;
-  transition:transform .2s ease, border-color .2s ease, background .2s ease;
+  transition:background .65s ease, border-color .65s ease;
 }
-.emotion-grid button:hover { transform:translateY(-2px); border-color:#c6b9e1; }
-.emotion-grid button.selected { border-color:#9e8cd1; background:#f2eefb; color:#6754a5; box-shadow:0 0 0 2px #ece6fa; }
-.emotion-grid button span { font-size:18px; line-height:1; }
+.auto-emotion-card div { display:flex; flex-direction:column; gap:2px; }
+.auto-emotion-card strong { color:#5f5374; font-size:12px; }
+.auto-emotion-card small { color:#8b8298; font-size:9px; line-height:1.35; }
+.mood-orb {
+  width:11px;
+  height:11px;
+  flex:0 0 auto;
+  border-radius:50%;
+  background:#ad9bd6;
+  box-shadow:0 0 0 5px rgba(173,155,214,.14);
+  animation:empathy-pulse 2.4s ease-in-out infinite;
+  transition:background .65s ease, box-shadow .65s ease;
+}
+.mood-joy, .mood-happy { background:#fffaf0; border-color:#eee0b9; }
+.mood-joy .mood-orb, .mood-happy .mood-orb { background:#e4ad52; box-shadow:0 0 0 5px rgba(228,173,82,.14); }
+.mood-sad { background:#f5f8ff; border-color:#dce5f2; }
+.mood-sad .mood-orb { background:#7da5ca; box-shadow:0 0 0 5px rgba(125,165,202,.14); }
+.mood-fear, .mood-angry { background:#fff6f7; border-color:#efdadd; }
+.mood-fear .mood-orb, .mood-angry .mood-orb { background:#d57984; box-shadow:0 0 0 5px rgba(213,121,132,.14); }
 
 .style-switch {
   display: grid;
@@ -560,6 +568,7 @@ footer a { color:#7564ae; text-decoration:none; font-weight:800; }
 @keyframes surprised-recoil { 0%,18%,100% { transform:translateY(0) scale(1); } 7% { transform:translateY(-5px) scale(1.018); } }
 @keyframes effect-float { 0%,100% { margin-top:0; } 50% { margin-top:-7px; } }
 @keyframes tear-drop { 0% { opacity:0; transform:translateY(-4px) rotate(15deg) scale(.7); } 25%,70% { opacity:1; } 100% { opacity:0; transform:translateY(16px) rotate(15deg) scale(1); } }
+@keyframes empathy-pulse { 0%,100% { transform:scale(.9); opacity:.72; } 50% { transform:scale(1.08); opacity:1; } }
 
 @media (max-width: 1050px) {
   .app-shell {

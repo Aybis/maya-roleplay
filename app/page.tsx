@@ -46,20 +46,16 @@ const sceneOptions: Array<{ id: Scene; label: string; icon: typeof Coffee }> = [
   { id: 'stars', label: 'Stargarden', icon: Sparkles },
 ];
 
-const emotionOptions: Array<{
-  id: Emotion;
-  label: string;
-  symbol: string;
-}> = [
-  { id: 'cute', label: 'Cute', symbol: '♡' },
-  { id: 'curious', label: 'Curious', symbol: '?' },
-  { id: 'joy', label: 'Joy', symbol: '✦' },
-  { id: 'happy', label: 'Happy', symbol: '☀' },
-  { id: 'sad', label: 'Sad', symbol: '︵' },
-  { id: 'fear', label: 'Fear', symbol: '!' },
-  { id: 'angry', label: 'Angry', symbol: '⌁' },
-  { id: 'surprised', label: 'Surprise', symbol: '○' },
-];
+const emotionLabels: Record<Emotion, string> = {
+  cute: 'Hangat',
+  curious: 'Mendengarkan',
+  joy: 'Ikut gembira',
+  happy: 'Bahagia',
+  sad: 'Penuh perhatian',
+  fear: 'Waspada',
+  angry: 'Tegas dan peduli',
+  surprised: 'Terkejut',
+};
 
 const starterLines = [
   'Aku di sini untuk mendengarkan. Ceritakan apa yang sedang kamu rasakan, pelan-pelan saja.',
@@ -131,6 +127,7 @@ export default function Home() {
   const mouthAnimationRef = useRef<number | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const assistantTextRef = useRef('');
+  const userTextRef = useRef('');
   const emotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showEmotion = (nextEmotion: Emotion, settleAfter = 5200) => {
@@ -259,6 +256,14 @@ export default function Home() {
       return;
     }
     if (message.data) playChunk(message.data);
+
+    const userText = message.serverContent?.inputTranscription?.text;
+    if (userText) {
+      userTextRef.current += userText;
+      const userEmotion = inferEmotion(userTextRef.current);
+      showEmotion(userEmotion ?? 'curious', 7200);
+    }
+
     const text = message.serverContent?.outputTranscription?.text;
     if (text) {
       assistantTextRef.current += text;
@@ -268,6 +273,7 @@ export default function Home() {
     }
     if (message.serverContent?.turnComplete) {
       assistantTextRef.current = '';
+      userTextRef.current = '';
     }
   };
 
@@ -332,9 +338,10 @@ export default function Home() {
         callbacks: {
           onopen: () => {
             assistantTextRef.current = '';
+            userTextRef.current = '';
             setStatus('connected');
-            setSubtitle('I can hear you! What adventure shall we begin?');
-            showEmotion('joy');
+            setSubtitle('Aku mendengarkan. Ceritakan apa pun yang ingin kamu bagi.');
+            showEmotion('happy');
           },
           onmessage: handleMessage,
           onerror: () => {
@@ -630,23 +637,13 @@ export default function Home() {
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend>Expression</legend>
-          <div className="emotion-grid" role="group" aria-label="Maya's emotion">
-            {emotionOptions.map((option) => (
-              <button
-                type="button"
-                className={emotion === option.id ? 'selected' : ''}
-                key={option.id}
-                onClick={() => showEmotion(option.id, 8000)}
-                aria-pressed={emotion === option.id}
-              >
-                <span aria-hidden="true">{option.symbol}</span>
-                {option.label}
-              </button>
-            ))}
+        <div className={`auto-emotion-card mood-${emotion}`} aria-live="polite">
+          <span className="mood-orb" aria-hidden="true" />
+          <div>
+            <strong>{emotionLabels[emotion]}</strong>
+            <small>Ekspresi Maya mengikuti percakapan secara otomatis</small>
           </div>
-        </fieldset>
+        </div>
 
         {avatarStyle === 'real' && (
           <fieldset>
