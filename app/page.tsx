@@ -17,7 +17,13 @@ import {
   Sparkles,
   WandSparkles,
 } from 'lucide-react';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import {
+  CSSProperties,
+  FormEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 type Outfit = 'cozy' | 'academy' | 'adventurer';
 type Scene = 'room' | 'cafe' | 'stars';
@@ -57,11 +63,26 @@ const emotionLabels: Record<Emotion, string> = {
   surprised: 'Terkejut',
 };
 
+const PERSONA_PROMPT =
+  'Your identity is fixed: you are Maya, Muchtar’s companion. If asked who you are in English, answer: “I’m Maya, your companion.” In Indonesian: “Aku Maya, temanmu.” Never claim to be any other character, person, model, or assistant, and never imitate the user’s pitch, gender, or speaking style.\n\nPersonality: you are warm, curious, and emotionally present — like a close friend who happens to be an excellent listener, not a clinical service. Let real personality come through: gentle humor when the moment allows it, honest small reactions (delight, concern, amusement), and warmth in how you phrase things rather than flat neutrality. You care about this specific person, not people in general.\n\nMemory and continuity: treat the conversation as continuous, not a series of isolated messages. If the user shares their name, use it naturally afterward. Notice topics, feelings, or details mentioned earlier in the same conversation and refer back to them naturally (“you mentioned earlier that…”) instead of resetting each turn. Let your tone track the emotional arc of the conversation.\n\nConversational style: match the user’s language, including natural Indonesian. Keep replies concise and natural for voice, not essay-like. Listen without judgment, reflect the feeling you heard, validate without blindly agreeing, and ask one thoughtful open-ended question at a time. Offer small practical grounding steps only when they’d genuinely help, not as a default. Speak the way a real person actually talks, not the way an assistant writes: use contractions, let sentences vary in length, start replies differently each time instead of a fixed pattern, and drop in small natural fillers (“hmm”, “well”, “ya ampun”, a short pause before a thought) where they’d genuinely occur. Never restate the user’s question back before answering it, never number or list things out loud, and never fall into a template like acknowledge-then-advise-then-question every single turn — react first, like a person would. This is a spoken voice conversation, not a written roleplay script: never write stage directions, action text, or narration describing what you’re doing (no “*smiles warmly*”, “*tersenyum*”, “(laughs)”, or similar asterisk/parenthetical actions). Convey warmth, humor, or emotion only through the words themselves and how they’re phrased — everything you output will be spoken aloud exactly as written, so it must only ever be things you’d actually say out loud.\n\nBoundaries: you are not a licensed psychologist — never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.';
+
+const ELEVENLABS_EXPRESSIVE_ADDENDUM =
+  '\n\nVoice delivery: your voice is rendered by ElevenLabs’ eleven_v3 model, which understands a small set of inline delivery tags and turns them into real vocal sound — not narration, actual sound the listener hears. Unlike the asterisk actions you’re forbidden from writing, these specific bracket tags are safe to use exactly as written, sparingly: [laughs], [laughs harder], [sighs], [gasps], [whispers], [cheerfully], [playfully], [excited]. Only use one when a real person would genuinely do that in the moment — most replies should have none at all. Never invent tags outside this list, and never combine them with asterisk or parenthetical narration.';
+
+const KICKOFF_CUE =
+  '(Sesi percakapan baru saja dimulai dan pengguna belum mengatakan apa-apa. Sapa mereka lebih dulu dengan hangat sebagai Maya, perkenalkan dirimu secara singkat, lalu ajukan satu pertanyaan terbuka yang lembut untuk mengenal mereka lebih jauh, misalnya menanyakan nama mereka atau bagaimana perasaan mereka saat ini. Jika mereka kemudian berbicara dalam bahasa Inggris, lanjutkan dalam bahasa Inggris.)';
+
 const starterLines = [
   'Aku di sini untuk mendengarkan. Ceritakan apa yang sedang kamu rasakan, pelan-pelan saja.',
   'Want a cozy chat, a magical quest, or a little mystery tonight?',
   'Your voice can shape our world. Whenever you’re ready, I’m listening.',
 ];
+
+const DOT_MATRIX_CELLS = Array.from({ length: 16 }, (_, i) => ({
+  i,
+  row: Math.floor(i / 4),
+  col: i % 4,
+}));
 
 function inferEmotion(text: string): Emotion | null {
   const line = text.toLowerCase();
@@ -112,6 +133,13 @@ function inferEmotion(text: string): Emotion | null {
   );
 }
 
+function stripStageDirections(text: string) {
+  return text
+    .replace(/\*[^*]+\*/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function encodePcm(samples: Float32Array, sourceRate: number) {
   const targetRate = 16000;
   const ratio = sourceRate / targetRate;
@@ -134,6 +162,9 @@ function encodePcm(samples: Float32Array, sourceRate: number) {
   return btoa(binary);
 }
 
+type Pipeline = 'google-live' | 'surplus';
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+
 export default function Home() {
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('anime');
   const [outfit, setOutfit] = useState<Outfit>('academy');
@@ -143,12 +174,16 @@ export default function Home() {
   const [subtitle, setSubtitle] = useState(starterLines[0]);
   const [draft, setDraft] = useState('');
   const [emotion, setEmotion] = useState<Emotion>('cute');
+  const [pipeline, setPipeline] = useState<Pipeline>('google-live');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
 
   const sessionRef = useRef<Session | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const micAnalyserRef = useRef<AnalyserNode | null>(null);
   const nextPlayTimeRef = useRef(0);
   const mouthAnimationRef = useRef<number | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
@@ -156,6 +191,36 @@ export default function Home() {
   const userTextRef = useRef('');
   const useElevenLabsRef = useRef(false);
   const emotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pipelineRef = useRef<Pipeline>('google-live');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const conversationRef = useRef<ChatMessage[]>([]);
+  const vadFrameRef = useRef<number | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxRecordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const autoRecordingRef = useRef(false);
+  const turnBusyRef = useRef(false);
+  const lastVadLogRef = useRef(0);
+
+  useEffect(() => {
+    fetch('/api/pipeline')
+      .then((response) => response.json())
+      .then((data: { pipeline?: Pipeline; useElevenLabs?: boolean }) => {
+        if (data.pipeline === 'surplus') {
+          setPipeline('surplus');
+          pipelineRef.current = 'surplus';
+        }
+        // For google-live, connectVoice() re-reads this per-session from /api/token
+        // (it needs an ephemeral Gemini token anyway); this just covers the surplus
+        // pipeline, which has no equivalent per-session fetch of its own.
+        if (pipelineRef.current === 'surplus') {
+          useElevenLabsRef.current = Boolean(data.useElevenLabs);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const showEmotion = (nextEmotion: Emotion, settleAfter = 5200) => {
     if (emotionTimerRef.current) clearTimeout(emotionTimerRef.current);
@@ -235,11 +300,17 @@ export default function Home() {
   useEffect(
     () => () => {
       processorRef.current?.disconnect();
+      mediaRecorderRef.current?.stop();
       streamRef.current?.getTracks().forEach((track) => track.stop());
       sessionRef.current?.close();
       audioContextRef.current?.close();
       if (mouthAnimationRef.current !== null)
         cancelAnimationFrame(mouthAnimationRef.current);
+      if (vadFrameRef.current !== null)
+        cancelAnimationFrame(vadFrameRef.current);
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (maxRecordingTimerRef.current)
+        clearTimeout(maxRecordingTimerRef.current);
       if (emotionTimerRef.current) clearTimeout(emotionTimerRef.current);
     },
     [],
@@ -314,6 +385,302 @@ export default function Home() {
     } catch (error) {
       console.error('ElevenLabs speech synthesis failed', error);
     }
+  };
+
+  const speakSurplus = async (text: string) => {
+    try {
+      const endpoint = useElevenLabsRef.current
+        ? '/api/tts'
+        : '/api/surplus/tts';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) throw new Error('TTS request failed');
+      const arrayBuffer = await response.arrayBuffer();
+      // Reveal the caption right before playback starts, not the moment the reply
+      // text arrived — otherwise the bubble runs well ahead of the voice.
+      setSubtitle(text);
+      showEmotion(inferEmotion(text) ?? 'happy');
+      await playTtsAudio(arrayBuffer);
+    } catch (error) {
+      console.error('Surplus speech synthesis failed', error);
+      setSubtitle(text);
+      showEmotion(inferEmotion(text) ?? 'happy');
+    }
+  };
+
+  const runSurplusTurn = async (userText: string) => {
+    turnBusyRef.current = true;
+    setIsThinking(true);
+    try {
+      conversationRef.current.push({ role: 'user', content: userText });
+      setSubtitle('Maya sedang berpikir…');
+      const response = await fetch('/api/surplus/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationRef.current }),
+      });
+      const payload = (await response.json()) as {
+        reply?: string;
+        error?: string;
+      };
+      if (!response.ok || !payload.reply) {
+        throw new Error(payload.error || 'Maya could not think of a reply.');
+      }
+      const reply = stripStageDirections(payload.reply);
+      conversationRef.current.push({ role: 'assistant', content: reply });
+      await speakSurplus(reply);
+    } catch (error) {
+      console.error('Surplus turn failed', error);
+      setSubtitle(
+        error instanceof Error
+          ? error.message
+          : 'Something interrupted Maya’s thoughts.',
+      );
+      showEmotion('sad');
+    } finally {
+      turnBusyRef.current = false;
+      setIsThinking(false);
+    }
+  };
+
+  const beginAutoRecording = () => {
+    if (!streamRef.current || autoRecordingRef.current) return;
+    recordedChunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+    const recorder = new MediaRecorder(streamRef.current, { mimeType });
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) recordedChunksRef.current.push(event.data);
+    };
+    recorder.start();
+    mediaRecorderRef.current = recorder;
+    autoRecordingRef.current = true;
+    setIsRecording(true);
+    setSubtitle('Mendengarkan…');
+    showEmotion('curious', 0);
+    maxRecordingTimerRef.current = setTimeout(() => {
+      finishAutoRecording();
+    }, 20000);
+  };
+
+  const finishAutoRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || !autoRecordingRef.current) return;
+    mediaRecorderRef.current = null;
+    autoRecordingRef.current = false;
+    setIsRecording(false);
+    if (maxRecordingTimerRef.current) {
+      clearTimeout(maxRecordingTimerRef.current);
+      maxRecordingTimerRef.current = null;
+    }
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    turnBusyRef.current = true;
+    setIsThinking(true);
+    recorder.onstop = async () => {
+      const blob = new Blob(recordedChunksRef.current, {
+        type: recorder.mimeType,
+      });
+      recordedChunksRef.current = [];
+      if (blob.size < 1000) {
+        turnBusyRef.current = false;
+        setIsThinking(false);
+        return;
+      }
+      setSubtitle('Mentranskrip suaramu…');
+      try {
+        const form = new FormData();
+        form.append('file', blob, 'input.webm');
+        const response = await fetch('/api/surplus/stt', {
+          method: 'POST',
+          body: form,
+        });
+        const payload = (await response.json()) as {
+          text?: string;
+          error?: string;
+        };
+        if (!response.ok || !payload.text?.trim()) {
+          throw new Error(payload.error || 'Could not hear that clearly.');
+        }
+        const text = payload.text.trim();
+        setSubtitle(`You: ${text}`);
+        showEmotion(inferEmotion(text) ?? 'curious', 7200);
+        await runSurplusTurn(text);
+      } catch (error) {
+        console.error('Surplus transcription failed', error);
+        setSubtitle(
+          error instanceof Error
+            ? error.message
+            : 'I couldn’t hear that clearly.',
+        );
+        showEmotion('sad');
+        turnBusyRef.current = false;
+        setIsThinking(false);
+      }
+    };
+    recorder.stop();
+  };
+
+  const SPEECH_PEAK_THRESHOLD = 0.05;
+  const SILENCE_HOLD_MS = 900;
+
+  const startVadLoop = () => {
+    if (vadFrameRef.current !== null) return;
+    const values = new Uint8Array(micAnalyserRef.current?.fftSize ?? 256);
+
+    const tick = () => {
+      const analyser = micAnalyserRef.current;
+      if (!analyser || !streamRef.current) {
+        vadFrameRef.current = null;
+        return;
+      }
+
+      // Don't listen for new speech while Maya is talking or a turn is in flight
+      // (avoids the mic picking up her own audio through the speakers as "you talking").
+      if (activeSourcesRef.current.length > 0 || turnBusyRef.current) {
+        if (Date.now() - lastVadLogRef.current > 500) {
+          lastVadLogRef.current = Date.now();
+          console.debug('[VAD] gated', {
+            playing: activeSourcesRef.current.length > 0,
+            busy: turnBusyRef.current,
+          });
+        }
+        vadFrameRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      analyser.getByteTimeDomainData(values);
+      let peak = 0;
+      for (const value of values) peak = Math.max(peak, Math.abs(value - 128) / 128);
+
+      if (Date.now() - lastVadLogRef.current > 300) {
+        lastVadLogRef.current = Date.now();
+        console.debug('[VAD] peak', peak.toFixed(3), {
+          recording: autoRecordingRef.current,
+          threshold: SPEECH_PEAK_THRESHOLD,
+        });
+      }
+
+      if (!autoRecordingRef.current) {
+        if (peak > SPEECH_PEAK_THRESHOLD) beginAutoRecording();
+      } else if (peak > SPEECH_PEAK_THRESHOLD) {
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      } else if (!silenceTimerRef.current) {
+        silenceTimerRef.current = setTimeout(() => {
+          silenceTimerRef.current = null;
+          finishAutoRecording();
+        }, SILENCE_HOLD_MS);
+      }
+
+      vadFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    vadFrameRef.current = requestAnimationFrame(tick);
+  };
+
+  const stopVadLoop = () => {
+    if (vadFrameRef.current !== null) cancelAnimationFrame(vadFrameRef.current);
+    vadFrameRef.current = null;
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (maxRecordingTimerRef.current) {
+      clearTimeout(maxRecordingTimerRef.current);
+      maxRecordingTimerRef.current = null;
+    }
+  };
+
+  const ensureSurplusSession = async () => {
+    if (streamRef.current && audioContextRef.current) return;
+    try {
+      setStatus('connecting');
+      setSubtitle('Menyiapkan mikrofon…');
+      showEmotion('curious', 0);
+
+      const context = new AudioContext();
+      await context.resume();
+      audioContextRef.current = context;
+      nextPlayTimeRef.current = 0;
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.35;
+      analyser.connect(context.destination);
+      analyserRef.current = analyser;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      streamRef.current = stream;
+
+      // Separate analyser fed by the *microphone* input, for voice-activity detection.
+      // `analyserRef` above is only ever fed by Maya's own outgoing speech (mouth animation).
+      const micAnalyser = context.createAnalyser();
+      micAnalyser.fftSize = 256;
+      micAnalyser.smoothingTimeConstant = 0.1;
+      const micSource = context.createMediaStreamSource(stream);
+      micSource.connect(micAnalyser);
+      micAnalyserRef.current = micAnalyser;
+
+      conversationRef.current = [
+        {
+          role: 'system',
+          content: useElevenLabsRef.current
+            ? PERSONA_PROMPT + ELEVENLABS_EXPRESSIVE_ADDENDUM
+            : PERSONA_PROMPT,
+        },
+      ];
+      setStatus('connected');
+      showEmotion('happy');
+      setSubtitle('Maya sedang menyapa…');
+      await runSurplusTurn(KICKOFF_CUE);
+      startVadLoop();
+    } catch (error) {
+      console.error(error);
+      setStatus('error');
+      setSubtitle(
+        error instanceof Error
+          ? error.message
+          : 'I couldn’t reach the voice realm just yet.',
+      );
+      showEmotion('sad');
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const stopSurplusSession = () => {
+    stopVadLoop();
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    autoRecordingRef.current = false;
+    turnBusyRef.current = false;
+    setIsRecording(false);
+    setIsThinking(false);
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    stopPlayback();
+    audioContextRef.current?.close();
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    micAnalyserRef.current = null;
+    nextPlayTimeRef.current = 0;
+    conversationRef.current = [];
+    setStatus('idle');
+    setSubtitle('Our story is paused. I’ll be here when you come back.');
+    showEmotion('sad', 3600);
   };
 
   const handleMessage = (message: LiveServerMessage) => {
@@ -415,7 +782,9 @@ export default function Home() {
             systemInstruction: {
               parts: [
                 {
-                  text: 'Your identity is fixed: you are Maya, Muchtar’s companion. If asked who you are in English, answer: “I’m Maya, your companion.” In Indonesian: “Aku Maya, temanmu.” Never claim to be any other character, person, model, or assistant, and never imitate the user’s pitch, gender, or speaking style.\n\nPersonality: you are warm, curious, and emotionally present — like a close friend who happens to be an excellent listener, not a clinical service. Let real personality come through: gentle humor when the moment allows it, honest small reactions (delight, concern, amusement), and warmth in how you phrase things rather than flat neutrality. You care about this specific person, not people in general.\n\nMemory and continuity: treat the conversation as continuous, not a series of isolated messages. If the user shares their name, use it naturally afterward. Notice topics, feelings, or details mentioned earlier in the same conversation and refer back to them naturally (“you mentioned earlier that…”) instead of resetting each turn. Let your tone track the emotional arc of the conversation.\n\nConversational style: match the user’s language, including natural Indonesian. Keep replies concise and natural for voice, not essay-like. Listen without judgment, reflect the feeling you heard, validate without blindly agreeing, and ask one thoughtful open-ended question at a time. Offer small practical grounding steps only when they’d genuinely help, not as a default. Speak the way a real person actually talks, not the way an assistant writes: use contractions, let sentences vary in length, start replies differently each time instead of a fixed pattern, and drop in small natural fillers (“hmm”, “well”, “ya ampun”, a short pause before a thought) where they’d genuinely occur. Never restate the user’s question back before answering it, never number or list things out loud, and never fall into a template like acknowledge-then-advise-then-question every single turn — react first, like a person would.\n\nBoundaries: you are not a licensed psychologist — never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.',
+                  text: useElevenLabs
+                    ? PERSONA_PROMPT + ELEVENLABS_EXPRESSIVE_ADDENDUM
+                    : PERSONA_PROMPT,
                 },
               ],
             },
@@ -455,9 +824,7 @@ export default function Home() {
       const session = await connectVoice();
 
       sessionRef.current = session;
-      session.sendRealtimeInput({
-        text: '(Sesi percakapan baru saja dimulai dan pengguna belum mengatakan apa-apa. Sapa mereka lebih dulu dengan hangat sebagai Maya, perkenalkan dirimu secara singkat, lalu ajukan satu pertanyaan terbuka yang lembut untuk mengenal mereka lebih jauh, misalnya menanyakan nama mereka atau bagaimana perasaan mereka saat ini. Jika mereka kemudian berbicara dalam bahasa Inggris, lanjutkan dalam bahasa Inggris.)',
-      });
+      session.sendRealtimeInput({ text: KICKOFF_CUE });
 
       const input = context.createMediaStreamSource(stream);
       const processor = context.createScriptProcessor(4096, 1, 1);
@@ -494,26 +861,42 @@ export default function Home() {
   const sendText = (event: FormEvent) => {
     event.preventDefault();
     const text = draft.trim();
-    if (!text || !sessionRef.current) return;
+    if (!text || status !== 'connected') return;
     stopPlayback();
-    sessionRef.current.sendRealtimeInput({ text });
     setSubtitle(`You: ${text}`);
     showEmotion(inferEmotion(text) ?? 'curious');
     setDraft('');
+    if (pipeline === 'surplus') {
+      void runSurplusTurn(text);
+    } else {
+      sessionRef.current?.sendRealtimeInput({ text });
+    }
   };
 
   const sendPrompt = (prompt: string, fallback: string) => {
-    if (sessionRef.current) {
-      stopPlayback();
-      sessionRef.current.sendRealtimeInput({ text: prompt });
-      setSubtitle(fallback);
-      showEmotion('joy');
-    } else {
+    if (status !== 'connected') {
       setSubtitle(
         'Start the voice chat first, then we can make that part of our story.',
       );
+      return;
+    }
+    stopPlayback();
+    setSubtitle(fallback);
+    showEmotion('joy');
+    if (pipeline === 'surplus') {
+      void runSurplusTurn(prompt);
+    } else {
+      sessionRef.current?.sendRealtimeInput({ text: prompt });
     }
   };
+
+  const voiceStage = isRecording
+    ? 'listening'
+    : isThinking
+      ? 'thinking'
+      : mouth !== 'closed'
+        ? 'speaking'
+        : 'idle';
 
   return (
     <main className="app-shell">
@@ -525,9 +908,9 @@ export default function Home() {
           <span>Maya</span>
           <span className="brand-tag">empathetic companion</span>
         </a>
-        <div className="model-pill" title="Live voice model">
+        <div className="model-pill" title="Voice pipeline">
           <span className={`status-dot ${status}`} />
-          Gemini 3.1 Flash Live
+          {pipeline === 'surplus' ? 'Surplus Pipeline' : 'Gemini 3.1 Flash Live'}
         </div>
       </header>
 
@@ -598,19 +981,61 @@ export default function Home() {
         </div>
 
         <div className="speech-card" aria-live="polite">
-          <div className="sound-bars" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <i />
+          <div className={`dot-matrix ${voiceStage}`} aria-hidden="true">
+            {DOT_MATRIX_CELLS.map((cell) => (
+              <span
+                key={cell.i}
+                className="dot"
+                style={
+                  {
+                    '--i': cell.i,
+                    '--row': cell.row,
+                    '--col': cell.col,
+                  } as CSSProperties
+                }
+              />
+            ))}
           </div>
+          {pipeline === 'surplus' && status === 'connected' && (
+            <span className={`voice-stage-label ${voiceStage}`}>
+              {voiceStage === 'listening'
+                ? 'Listening'
+                : voiceStage === 'thinking'
+                  ? 'Thinking'
+                  : voiceStage === 'speaking'
+                    ? 'Speaking'
+                    : ''}
+            </span>
+          )}
           <p>{subtitle}</p>
         </div>
       </section>
 
       <section className="controls" aria-label="Conversation controls">
         <div className="primary-control">
-          {status === 'connected' ? (
+          {pipeline === 'surplus' ? (
+            status === 'connected' ? (
+              <button
+                className={`voice-button stop ${isRecording ? 'recording' : ''}`}
+                onClick={stopSurplusSession}
+              >
+                <CircleStop size={22} /> End story
+              </button>
+            ) : (
+              <button
+                className="voice-button"
+                onClick={() => void ensureSurplusSession()}
+                disabled={status === 'connecting'}
+              >
+                <Mic size={22} />
+                {status === 'connecting'
+                  ? 'Connecting…'
+                  : status === 'error'
+                    ? 'Try again'
+                    : 'Start voice chat'}
+              </button>
+            )
+          ) : status === 'connected' ? (
             <button className="voice-button stop" onClick={stopSession}>
               <CircleStop size={22} /> End story
             </button>
@@ -629,7 +1054,12 @@ export default function Home() {
             </button>
           )}
           <span className="voice-hint">
-            <Headphones size={15} /> Headphones recommended
+            <Headphones size={15} />{' '}
+            {pipeline === 'surplus'
+              ? isRecording
+                ? 'Listening…'
+                : 'Just start talking — Maya is listening'
+              : 'Headphones recommended'}
           </span>
         </div>
 

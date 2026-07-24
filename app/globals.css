@@ -322,11 +322,67 @@ button { color: inherit; }
 }
 
 .speech-card p { margin:0; font-size:15px; line-height:1.55; font-weight:650; }
-.sound-bars { position:absolute; left:20px; top:22px; height:24px; display:flex; align-items:center; gap:3px; }
-.sound-bars i { width:3px; height:8px; border-radius:3px; background:var(--lavender); animation:bars 1.1s ease-in-out infinite; }
-.sound-bars i:nth-child(2) { height:18px; animation-delay:.12s; }
-.sound-bars i:nth-child(3) { height:13px; animation-delay:.24s; }
-.sound-bars i:nth-child(4) { height:6px; animation-delay:.36s; }
+
+.dot-matrix {
+  position:absolute;
+  left:20px;
+  top:20px;
+  width:26px;
+  height:26px;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  grid-template-rows:repeat(4, 1fr);
+  gap:2.5px;
+  color:var(--lavender);
+}
+.dot-matrix .dot { width:100%; height:100%; border-radius:2px; background:currentColor; opacity:.2; }
+
+/* idle: everything dim, no motion */
+.dot-matrix.idle { color:var(--muted); }
+.dot-matrix.idle .dot { opacity:.18; animation:none; }
+
+/* listening (user talking): ripple sweeping across the grid, quick and reactive */
+.dot-matrix.listening { color:#d57582; }
+.dot-matrix.listening .dot {
+  animation:dot-ripple .85s ease-in-out infinite;
+  animation-delay:calc((var(--row) + var(--col)) * 0.06s);
+}
+
+/* thinking: a scanning column sweeps left to right, steady and mechanical */
+.dot-matrix.thinking { color:#c9a227; }
+.dot-matrix.thinking .dot {
+  animation:dot-scan 1.4s linear infinite;
+  animation-delay:calc(var(--col) * 0.14s);
+}
+
+/* speaking: Maya's own voice — unsynchronized twinkle, livelier and less structured */
+.dot-matrix.speaking { color:var(--lavender-dark); }
+.dot-matrix.speaking .dot {
+  animation:dot-twinkle .7s ease-in-out infinite;
+  animation-delay:calc(var(--i) * 0.037s);
+}
+
+@keyframes dot-ripple { 0%,100% { opacity:.2; transform:scale(.55); } 50% { opacity:1; transform:scale(1.05); } }
+@keyframes dot-scan { 0%,78%,100% { opacity:.18; transform:scale(.5); } 12% { opacity:1; transform:scale(1.08); } }
+@keyframes dot-twinkle { 0%,100% { opacity:.25; transform:scale(.6); } 50% { opacity:1; transform:scale(1); } }
+
+.voice-stage-label {
+  position:absolute;
+  left:20px;
+  top:-9px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  padding:2px 8px;
+  border-radius:8px;
+  background:rgba(255,253,249,.95);
+  border:1px solid rgba(255,255,255,.8);
+  color:var(--muted);
+}
+.voice-stage-label.listening { color:#d57582; }
+.voice-stage-label.thinking { color:#a8811d; }
+.voice-stage-label.speaking { color:var(--lavender-dark); }
 
 .controls {
   grid-area: controls;
@@ -361,6 +417,8 @@ button { color: inherit; }
 .voice-button:disabled { cursor:wait; opacity:.7; transform:none; }
 .voice-button.stop { background:#d57582; box-shadow:0 10px 24px rgba(196,94,108,.26); }
 .voice-hint { display:flex; align-items:center; gap:5px; color:#90889c; font-size:10px; }
+
+.voice-button.stop.recording { box-shadow:0 0 0 4px rgba(213,117,130,.28), 0 10px 24px rgba(196,94,108,.26); }
 
 .text-chat label { display:block; margin-bottom:5px; color:var(--muted); font-size:11px; font-weight:800; }
 .input-row { display:flex; gap:8px; }
