@@ -1,6 +1,22 @@
+import { getSessionUser } from "@/lib/auth/session";
+import { checkRateLimit } from "@/lib/rate-limit";
+
 export const runtime = "edge";
 
 export async function POST(request: Request) {
+  const user = await getSessionUser();
+  if (!user) {
+    return Response.json({ error: "Sign in to use Maya's voice." }, { status: 401 });
+  }
+
+  const allowed = await checkRateLimit(user.id, "tts");
+  if (!allowed) {
+    return Response.json(
+      { error: "You've reached today's voice message limit. Try again tomorrow." },
+      { status: 429 },
+    );
+  }
+
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const voiceId = process.env.ELEVENLABS_VOICE_ID;
   if (!apiKey || !voiceId) {

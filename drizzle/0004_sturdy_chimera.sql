@@ -1,0 +1,1 @@
+ALTER TABLE `flows` ADD `steps` text DEFAULT '[]' NOT NULL;

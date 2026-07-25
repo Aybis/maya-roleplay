@@ -1,4 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { getSessionUser } from "@/lib/auth/session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "edge";
 
@@ -19,6 +21,16 @@ const EXTRACT_SCHEMA = {
 };
 
 export async function POST(request: Request) {
+  const user = await getSessionUser();
+  if (!user) {
+    return Response.json({ complete: false }, { status: 401 });
+  }
+
+  const allowed = await checkRateLimit(user.id, "dealership-extract");
+  if (!allowed) {
+    return Response.json({ complete: false }, { status: 200 });
+  }
+
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return Response.json({ complete: false }, { status: 200 });

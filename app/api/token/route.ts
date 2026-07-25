@@ -1,8 +1,23 @@
 import { GoogleGenAI, Modality } from "@google/genai";
+import { getSessionUser } from "@/lib/auth/session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "edge";
 
 export async function POST() {
+  const user = await getSessionUser();
+  if (!user) {
+    return Response.json({ error: "Sign in to start a voice session." }, { status: 401 });
+  }
+
+  const allowed = await checkRateLimit(user.id, "voice-token");
+  if (!allowed) {
+    return Response.json(
+      { error: "You've reached today's voice session limit. Try again tomorrow." },
+      { status: 429 },
+    );
+  }
+
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return Response.json(
