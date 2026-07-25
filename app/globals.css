@@ -39,6 +39,33 @@ button { color: inherit; }
   background: #f7f4fb;
 }
 
+/* Dealership page: stage+controls collapse into one grid row (via a wrapping
+   column) so `.customizer` only ever spans a single, properly height-bounded
+   track -- spanning two "auto" rows lets tall transcript content stretch the
+   whole grid, which is the bug this avoids. Scoped so the companion page's
+   layout above is untouched. */
+.app-shell.dealership-shell {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header header"
+    "main customizer"
+    "footer footer";
+}
+.dealership-shell .stage-controls-col {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.dealership-shell .stage-controls-col .stage {
+  flex: 1;
+  min-height: 0;
+}
+
 .topbar {
   grid-area: header;
   min-height: 68px;
@@ -412,6 +439,14 @@ button { color: inherit; }
   border-left: 1px solid var(--line);
   background: #fffdfa;
   overflow:auto;
+}
+
+.customizer.transcript-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
 }
 
 .customizer-heading { display:flex; gap:11px; align-items:center; margin-bottom:24px; color:#7465ad; }
