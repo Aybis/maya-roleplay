@@ -2,6 +2,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getStripe } from "@/lib/billing/stripe";
 import { PLANS, getPriceId, type PlanId } from "@/lib/billing/plans";
 import PricingCard from "./pricing-card";
+import SiteHeader from "../site-header";
 
 async function loadPriceDisplay(plan: PlanId): Promise<string | null> {
   try {
@@ -20,7 +21,9 @@ export default async function PricingPage() {
   const [basicPrice, proPrice] = await Promise.all([loadPriceDisplay("basic"), loadPriceDisplay("pro")]);
 
   return (
-    <main className="auth-shell">
+    <>
+      <SiteHeader user={user} />
+      <main className="auth-shell">
       <div className="pricing-wrap">
         <h1 className="auth-title" style={{ textAlign: "center", fontSize: 30 }}>
           Choose your plan
@@ -49,6 +52,7 @@ export default async function PricingPage() {
           />
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

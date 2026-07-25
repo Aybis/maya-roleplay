@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { Heart, MessageCircle, Sparkles, Workflow } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 type Mode = 'signin' | 'signup';
@@ -19,6 +19,13 @@ const COPY: Record<Mode, { title: string; subtitle: string; cta: string; endpoin
     endpoint: '/api/auth/signup',
   },
 };
+
+const FEATURES = [
+  { icon: Heart, text: 'A warm voice companion, ready whenever you want to talk' },
+  { icon: Sparkles, text: 'Describe any character and get a working flow in seconds' },
+  { icon: Workflow, text: 'Multi-step flows with branching logic and webhooks' },
+  { icon: MessageCircle, text: 'Real-time voice conversation, not just text' },
+];
 
 export default function AuthForm({ mode }: { mode: Mode }) {
   const [email, setEmail] = useState('');
@@ -60,72 +67,100 @@ export default function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <main className="auth-shell">
-      <div className="auth-card">
-        <a className="brand" href="/" aria-label="Maya home">
+    <main className="auth-split">
+      <section className="auth-split-brand">
+        <a className="brand auth-split-logo" href="/" aria-label="Maya home">
           <span className="brand-mark">
             <Sparkles size={18} />
           </span>
           <span>Maya</span>
         </a>
 
-        <h1 className="auth-title">{copy.title}</h1>
-        <p className="auth-subtitle">{copy.subtitle}</p>
-
-        <form className="auth-form" onSubmit={onSubmit}>
-          <label className="auth-label" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="auth-input"
-          />
-
-          <label className="auth-label" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="auth-input"
-          />
-
-          {error ? <p className="auth-error">{error}</p> : null}
-
-          <button type="submit" className="auth-submit" disabled={submitting}>
-            {submitting ? 'Please wait…' : copy.cta}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          {mode === 'signin' ? (
-            <>
-              New here? <a href="/signup">Create an account</a>
-            </>
-          ) : (
-            <>
-              Already have an account? <a href="/signin">Sign in</a>
-            </>
-          )}
+        <h1 className="auth-split-headline">Stories that talk back.</h1>
+        <p className="auth-split-tagline">
+          A cozy voice companion, and a builder for creating your own — from a simple chat
+          buddy to a fully automated conversation flow.
         </p>
 
-        {mode === 'signup' ? (
+        <ul className="auth-split-features">
+          {FEATURES.map((feature) => (
+            <li key={feature.text}>
+              <span className="auth-split-feature-icon">
+                <feature.icon size={16} />
+              </span>
+              {feature.text}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="auth-split-form-side">
+        <div className="auth-card">
+          <a className="brand auth-card-mobile-brand" href="/" aria-label="Maya home">
+            <span className="brand-mark">
+              <Sparkles size={18} />
+            </span>
+            <span>Maya</span>
+          </a>
+
+          <h1 className="auth-title">{copy.title}</h1>
+          <p className="auth-subtitle">{copy.subtitle}</p>
+
+          <form className="auth-form" onSubmit={onSubmit}>
+            <label className="auth-label" htmlFor="email">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="auth-input"
+            />
+
+            <label className="auth-label" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="auth-input"
+            />
+
+            {error ? <p className="auth-error">{error}</p> : null}
+
+            <button type="submit" className="auth-submit" disabled={submitting}>
+              {submitting ? 'Please wait…' : copy.cta}
+            </button>
+          </form>
+
           <p className="auth-switch">
-            By creating an account you agree to our <a href="/terms">Terms</a> and{' '}
-            <a href="/privacy">Privacy Policy</a>.
+            {mode === 'signin' ? (
+              <>
+                New here? <a href="/signup">Create an account</a>
+              </>
+            ) : (
+              <>
+                Already have an account? <a href="/signin">Sign in</a>
+              </>
+            )}
           </p>
-        ) : null}
-      </div>
+
+          {mode === 'signup' ? (
+            <p className="auth-switch">
+              By creating an account you agree to our <a href="/terms">Terms</a> and{' '}
+              <a href="/privacy">Privacy Policy</a>.
+            </p>
+          ) : null}
+        </div>
+      </section>
     </main>
   );
 }

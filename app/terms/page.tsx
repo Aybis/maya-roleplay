@@ -1,12 +1,16 @@
+import { getSessionUser } from "@/lib/auth/session";
+import SiteHeader from "../site-header";
+
 export const metadata = { title: "Terms of Service — Maya" };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const user = await getSessionUser();
+
   return (
-    <main className="legal-shell">
+    <>
+      <SiteHeader user={user} />
+      <main className="legal-shell">
       <div className="legal-card">
-        <a className="brand" href="/">
-          Maya
-        </a>
         <h1>Terms of Service</h1>
         <p className="legal-updated">Last updated: [DATE] — draft, not yet reviewed by a lawyer.</p>
 
@@ -102,6 +106,7 @@ export default function TermsPage() {
           <a href="/privacy">Privacy Policy</a> · <a href="/">Back to Maya</a>
         </p>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

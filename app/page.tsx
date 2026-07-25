@@ -1,15 +1,30 @@
 import { desc, eq, or } from "drizzle-orm";
-import { Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { flows } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
+import { FLOW_CATEGORIES } from "@/lib/flows/types";
+import SiteHeader from "./site-header";
 
-export default async function Home() {
+const CATEGORY_LABELS: Record<string, string> = {
+  companion: "Companion",
+  adventure: "Adventure",
+  business: "Business assistant",
+  custom: "Custom",
+};
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) {
     redirect("/signin");
   }
+
+  const { category } = await searchParams;
+  const activeCategory = category && FLOW_CATEGORIES.includes(category as (typeof FLOW_CATEGORIES)[number]) ? category : null;
 
   const db = getDb();
   const customFlows = await db
@@ -17,23 +32,13 @@ export default async function Home() {
     .from(flows)
     .where(or(eq(flows.visibility, "public"), eq(flows.createdBy, user.id)))
     .orderBy(desc(flows.createdAt))
-    .limit(30);
+    .limit(60);
+
+  const filteredFlows = activeCategory ? customFlows.filter((flow) => flow.category === activeCategory) : customFlows;
 
   return (
     <main className="picker-shell">
-      <header className="topbar picker-topbar">
-        <span className="brand">
-          <span className="brand-mark">
-            <Sparkles size={18} />
-          </span>
-          <span>Maya</span>
-        </span>
-        <div className="account-pill" title={user.email}>
-          <a className="account-email" href="/account">
-            {user.email}
-          </a>
-        </div>
-      </header>
+      <SiteHeader user={user} />
 
       <div className="picker-wrap">
         <h1 className="auth-title" style={{ fontSize: 30 }}>
@@ -41,20 +46,35 @@ export default async function Home() {
         </h1>
         <p className="auth-subtitle">Pick a companion, or create your own.</p>
 
+        <div className="category-filters">
+          <a href="/" className={`category-chip${!activeCategory ? " active" : ""}`}>
+            All
+          </a>
+          {FLOW_CATEGORIES.map((value) => (
+            <a key={value} href={`/?category=${value}`} className={`category-chip${activeCategory === value ? " active" : ""}`}>
+              {CATEGORY_LABELS[value]}
+            </a>
+          ))}
+        </div>
+
         <div className="flow-grid">
-          <a className="flow-card featured" href="/maya">
-            <span className="flow-card-badge">Companion</span>
-            <h2>Maya</h2>
-            <p>A warm, empathetic voice companion for cozy chats and gentle stories.</p>
-          </a>
+          {(!activeCategory || activeCategory === "companion") && (
+            <a className="flow-card featured" href="/maya">
+              <span className="flow-card-badge">Companion</span>
+              <h2>Maya</h2>
+              <p>A warm, empathetic voice companion for cozy chats and gentle stories.</p>
+            </a>
+          )}
 
-          <a className="flow-card featured" href="/dealership">
-            <span className="flow-card-badge">Business</span>
-            <h2>Dealership Assistant</h2>
-            <p>Book a service appointment, a test drive, or hear about current promos.</p>
-          </a>
+          {(!activeCategory || activeCategory === "business") && (
+            <a className="flow-card featured" href="/dealership">
+              <span className="flow-card-badge">Business</span>
+              <h2>Dealership Assistant</h2>
+              <p>Book a service appointment, a test drive, or hear about current promos.</p>
+            </a>
+          )}
 
-          {customFlows.map((flow) => (
+          {filteredFlows.map((flow) => (
             <a className="flow-card" href={`/flow/${flow.id}`} key={flow.id}>
               <span className="flow-card-badge">{flow.category}</span>
               <h2>{flow.name}</h2>
