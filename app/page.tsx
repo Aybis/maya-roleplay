@@ -1,804 +1,264 @@
-'use client';
+import { Heart, MessageCircle, Sparkles, Workflow } from "lucide-react";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth/session";
+import { getStripe } from "@/lib/billing/stripe";
+import { PLANS, getPriceId, type PlanId } from "@/lib/billing/plans";
+import { MayaLogo, MayaMark } from "./brand/maya-logo";
+import Reveal from "./reveal";
+import ScrollReveal from "./scroll-reveal";
+import LandingFlowDemo from "./landing-flow-demo";
 
-import {
-  GoogleGenAI,
-  Modality,
-  type LiveServerMessage,
-  type Session,
-} from '@google/genai';
-import {
-  CircleStop,
-  Coffee,
-  Headphones,
-  Heart,
-  Mic,
-  Palette,
-  Send,
-  Sparkles,
-  WandSparkles,
-} from 'lucide-react';
-import { FormEvent, useEffect, useRef, useState } from 'react';
-
-type Outfit = 'cozy' | 'academy' | 'adventurer';
-type Scene = 'room' | 'cafe' | 'stars';
-type Mouth = 'closed' | 'small' | 'open';
-type AvatarStyle = 'anime' | 'real';
-type Status = 'idle' | 'connecting' | 'connected' | 'error';
-type Emotion =
-  | 'cute'
-  | 'curious'
-  | 'joy'
-  | 'happy'
-  | 'sad'
-  | 'fear'
-  | 'angry'
-  | 'surprised';
-
-const outfitOptions: Array<{ id: Outfit; label: string; hint: string }> = [
-  { id: 'cozy', label: 'Cozy knit', hint: 'Soft & comfy' },
-  { id: 'academy', label: 'Academy', hint: 'Magic class' },
-  { id: 'adventurer', label: 'Adventurer', hint: 'Quest ready' },
+const FEATURES = [
+  {
+    icon: Heart,
+    title: "A companion that's actually warm",
+    description: "Maya is ready whenever you want to talk — cozy chats, gentle stories, real conversation.",
+  },
+  {
+    icon: Sparkles,
+    title: "Describe it, get a flow",
+    description: "Sketch any character or scenario in plain language and get a working voice experience in seconds.",
+  },
+  {
+    icon: Workflow,
+    title: "Branching, automated flows",
+    description: "Build multi-step conversations with logic and webhooks — from chat buddies to business assistants.",
+  },
+  {
+    icon: MessageCircle,
+    title: "Real voice, not just text",
+    description: "Natural, real-time voice conversation that listens and responds like a real back-and-forth.",
+  },
 ];
 
-const sceneOptions: Array<{ id: Scene; label: string; icon: typeof Coffee }> = [
-  { id: 'room', label: 'Moonlit room', icon: WandSparkles },
-  { id: 'cafe', label: 'Cloud café', icon: Coffee },
-  { id: 'stars', label: 'Stargarden', icon: Sparkles },
+const STEPS = [
+  {
+    title: "Pick a companion, or create your own",
+    description: "Start with Maya, spin up a business assistant, or design a custom character from scratch.",
+  },
+  {
+    title: "Talk in real time",
+    description: "No scripts to read from — just a natural voice conversation that responds as you speak.",
+  },
+  {
+    title: "Customize with flows",
+    description: "Add branching logic, quick actions, and webhooks to shape exactly how the conversation goes.",
+  },
 ];
 
-const emotionLabels: Record<Emotion, string> = {
-  cute: 'Hangat',
-  curious: 'Mendengarkan',
-  joy: 'Ikut gembira',
-  happy: 'Bahagia',
-  sad: 'Penuh perhatian',
-  fear: 'Waspada',
-  angry: 'Tegas dan peduli',
-  surprised: 'Terkejut',
+const FREE_PLAN = {
+  name: "Free",
+  tagline: "Try Maya before you subscribe",
+  price: "$0",
+  features: ["Chat with Maya", "A handful of voice minutes each month", "Build and save one custom flow"],
 };
 
-const starterLines = [
-  'Aku di sini untuk mendengarkan. Ceritakan apa yang sedang kamu rasakan, pelan-pelan saja.',
-  'Want a cozy chat, a magical quest, or a little mystery tonight?',
-  'Your voice can shape our world. Whenever you’re ready, I’m listening.',
-];
-
-function inferEmotion(text: string): Emotion | null {
-  const line = text.toLowerCase();
-  const cues: Array<[Emotion, string[]]> = [
-    [
-      'surprised',
-      ['wow', 'whoa', 'oh!', 'amazing', 'surprise', 'wah', 'kaget'],
-    ],
-    [
-      'fear',
-      ['afraid', 'scared', 'danger', 'frightened', 'takut', 'cemas', 'bahaya'],
-    ],
-    [
-      'angry',
-      ['angry', 'furious', 'unfair', 'annoyed', 'marah', 'kesal', 'tidak adil'],
-    ],
-    [
-      'sad',
-      [
-        'sad',
-        'sorry',
-        'lonely',
-        'heartbroken',
-        'sedih',
-        'maaf',
-        'kesepian',
-        'kehilangan',
-      ],
-    ],
-    [
-      'joy',
-      ['wonderful', 'fantastic', 'excited', 'hooray', 'senang sekali', 'hebat'],
-    ],
-    [
-      'happy',
-      ['happy', 'glad', 'love', 'smile', 'senang', 'bahagia', 'tersenyum'],
-    ],
-    [
-      'curious',
-      ['why', 'how', 'what if', 'wonder', 'kenapa', 'bagaimana', '?'],
-    ],
-    ['cute', ['cute', 'cozy', 'sweet', 'gentle', 'lucu', 'nyaman', 'lembut']],
-  ];
-
-  return (
-    cues.find(([, words]) => words.some((word) => line.includes(word)))?.[0] ??
-    null
-  );
+async function loadPriceDisplay(plan: PlanId): Promise<string | null> {
+  try {
+    const price = await getStripe().prices.retrieve(getPriceId(plan));
+    if (price.unit_amount == null) return null;
+    const amount = (price.unit_amount / 100).toFixed(price.unit_amount % 100 === 0 ? 0 : 2);
+    const interval = price.recurring?.interval ?? "mo";
+    return `$${amount}/${interval}`;
+  } catch {
+    return null;
+  }
 }
 
-function encodePcm(samples: Float32Array, sourceRate: number) {
-  const targetRate = 16000;
-  const ratio = sourceRate / targetRate;
-  const length = Math.floor(samples.length / ratio);
-  const pcm = new Int16Array(length);
-
-  for (let i = 0; i < length; i += 1) {
-    const start = Math.floor(i * ratio);
-    const end = Math.min(Math.floor((i + 1) * ratio), samples.length);
-    let sum = 0;
-    for (let j = start; j < end; j += 1) sum += samples[j];
-    const value = Math.max(-1, Math.min(1, sum / Math.max(1, end - start)));
-    pcm[i] = value < 0 ? value * 0x8000 : value * 0x7fff;
+export default async function LandingPage() {
+  const user = await getSessionUser();
+  if (user) {
+    redirect("/app");
   }
 
-  const bytes = new Uint8Array(pcm.buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 1)
-    binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-export default function Home() {
-  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('anime');
-  const [outfit, setOutfit] = useState<Outfit>('academy');
-  const [scene, setScene] = useState<Scene>('room');
-  const [mouth, setMouth] = useState<Mouth>('closed');
-  const [status, setStatus] = useState<Status>('idle');
-  const [subtitle, setSubtitle] = useState(starterLines[0]);
-  const [draft, setDraft] = useState('');
-  const [emotion, setEmotion] = useState<Emotion>('cute');
-
-  const sessionRef = useRef<Session | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const nextPlayTimeRef = useRef(0);
-  const mouthAnimationRef = useRef<number | null>(null);
-  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
-  const assistantTextRef = useRef('');
-  const userTextRef = useRef('');
-  const useElevenLabsRef = useRef(false);
-  const emotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showEmotion = (nextEmotion: Emotion, settleAfter = 5200) => {
-    if (emotionTimerRef.current) clearTimeout(emotionTimerRef.current);
-    setEmotion(nextEmotion);
-    if (nextEmotion !== 'cute' && settleAfter > 0) {
-      emotionTimerRef.current = setTimeout(() => {
-        setEmotion('cute');
-        emotionTimerRef.current = null;
-      }, settleAfter);
-    }
-  };
-
-  const stopMouthAnimation = () => {
-    if (mouthAnimationRef.current !== null)
-      cancelAnimationFrame(mouthAnimationRef.current);
-    mouthAnimationRef.current = null;
-    setMouth('closed');
-  };
-
-  const startMouthAnimation = () => {
-    if (mouthAnimationRef.current) return;
-
-    const values = new Uint8Array(analyserRef.current?.fftSize ?? 256);
-    const animate = () => {
-      const context = audioContextRef.current;
-      if (!context || context.currentTime >= nextPlayTimeRef.current - 0.04) {
-        stopMouthAnimation();
-        return;
-      }
-
-      const analyser = analyserRef.current;
-      if (analyser) {
-        analyser.getByteTimeDomainData(values);
-        let peak = 0;
-        for (const value of values)
-          peak = Math.max(peak, Math.abs(value - 128) / 128);
-        setMouth(peak > 0.24 ? 'open' : peak > 0.055 ? 'small' : 'closed');
-      }
-      mouthAnimationRef.current = requestAnimationFrame(animate);
-    };
-
-    mouthAnimationRef.current = requestAnimationFrame(animate);
-  };
-
-  const stopPlayback = () => {
-    for (const source of activeSourcesRef.current) {
-      try {
-        source.stop();
-      } catch {
-        // already finished playing
-      }
-    }
-    activeSourcesRef.current = [];
-    nextPlayTimeRef.current = audioContextRef.current?.currentTime ?? 0;
-    assistantTextRef.current = '';
-    stopMouthAnimation();
-  };
-
-  const stopSession = () => {
-    processorRef.current?.disconnect();
-    processorRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    sessionRef.current?.sendRealtimeInput({ audioStreamEnd: true });
-    sessionRef.current?.close();
-    sessionRef.current = null;
-    stopPlayback();
-    audioContextRef.current?.close();
-    audioContextRef.current = null;
-    analyserRef.current = null;
-    nextPlayTimeRef.current = 0;
-    setStatus('idle');
-    setSubtitle('Our story is paused. I’ll be here when you come back.');
-    showEmotion('sad', 3600);
-  };
-
-  useEffect(
-    () => () => {
-      processorRef.current?.disconnect();
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      sessionRef.current?.close();
-      audioContextRef.current?.close();
-      if (mouthAnimationRef.current !== null)
-        cancelAnimationFrame(mouthAnimationRef.current);
-      if (emotionTimerRef.current) clearTimeout(emotionTimerRef.current);
-    },
-    [],
-  );
-
-  const playGeminiPcmChunk = (encoded: string) => {
-    const context = audioContextRef.current;
-    if (!context) return;
-
-    const binary = atob(encoded);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    const sampleCount = Math.floor(bytes.byteLength / 2);
-    const buffer = context.createBuffer(1, sampleCount, 24000);
-    const channel = buffer.getChannelData(0);
-    for (let i = 0; i < sampleCount; i += 1) {
-      channel[i] = view.getInt16(i * 2, true) / 32768;
-    }
-
-    const source = context.createBufferSource();
-    source.buffer = buffer;
-    source.connect(analyserRef.current ?? context.destination);
-    source.onended = () => {
-      activeSourcesRef.current = activeSourcesRef.current.filter(
-        (item) => item !== source,
-      );
-    };
-    const startAt = Math.max(
-      context.currentTime + 0.035,
-      nextPlayTimeRef.current,
-    );
-    source.start(startAt);
-    nextPlayTimeRef.current = startAt + buffer.duration;
-    activeSourcesRef.current.push(source);
-    startMouthAnimation();
-  };
-
-  const playTtsAudio = async (arrayBuffer: ArrayBuffer) => {
-    const context = audioContextRef.current;
-    if (!context) return;
-
-    const buffer = await context.decodeAudioData(arrayBuffer);
-    const source = context.createBufferSource();
-    source.buffer = buffer;
-    source.connect(analyserRef.current ?? context.destination);
-    source.onended = () => {
-      activeSourcesRef.current = activeSourcesRef.current.filter(
-        (item) => item !== source,
-      );
-    };
-    const startAt = Math.max(
-      context.currentTime + 0.02,
-      nextPlayTimeRef.current,
-    );
-    source.start(startAt);
-    nextPlayTimeRef.current = startAt + buffer.duration;
-    activeSourcesRef.current.push(source);
-    startMouthAnimation();
-  };
-
-  const speak = async (text: string) => {
-    try {
-      const response = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      if (!response.ok) throw new Error('TTS request failed');
-      const arrayBuffer = await response.arrayBuffer();
-      await playTtsAudio(arrayBuffer);
-    } catch (error) {
-      console.error('ElevenLabs speech synthesis failed', error);
-    }
-  };
-
-  const handleMessage = (message: LiveServerMessage) => {
-    if (message.serverContent?.interrupted) {
-      stopPlayback();
-      return;
-    }
-
-    const userText = message.serverContent?.inputTranscription?.text;
-    if (userText) {
-      if (useElevenLabsRef.current && activeSourcesRef.current.length)
-        stopPlayback();
-      userTextRef.current += userText;
-      const userEmotion = inferEmotion(userTextRef.current);
-      showEmotion(userEmotion ?? 'curious', 7200);
-    }
-
-    if (!useElevenLabsRef.current && message.data) {
-      playGeminiPcmChunk(message.data);
-    }
-
-    const text = message.serverContent?.outputTranscription?.text;
-    if (text) {
-      assistantTextRef.current += text;
-      setSubtitle(assistantTextRef.current);
-      const inferred = inferEmotion(assistantTextRef.current);
-      if (inferred) showEmotion(inferred);
-    }
-    if (message.serverContent?.turnComplete) {
-      const finalText = assistantTextRef.current;
-      assistantTextRef.current = '';
-      userTextRef.current = '';
-      if (useElevenLabsRef.current && finalText.trim()) {
-        void speak(finalText.trim());
-      }
-    }
-  };
-
-  const beginSession = async () => {
-    try {
-      setStatus('connecting');
-      setSubtitle('Opening a little doorway between our worlds…');
-      showEmotion('curious', 0);
-
-      const context = new AudioContext();
-      await context.resume();
-      audioContextRef.current = context;
-      const analyser = context.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.35;
-      analyser.connect(context.destination);
-      analyserRef.current = analyser;
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-      streamRef.current = stream;
-
-      const requestToken = async () => {
-        const response = await fetch('/api/token', { method: 'POST' });
-        const payload = (await response.json()) as {
-          token?: string;
-          useElevenLabs?: boolean;
-          error?: string;
-        };
-        if (!response.ok || !payload.token) {
-          throw new Error(payload.error || 'Unable to begin a voice session.');
-        }
-        return payload;
-      };
-
-      const connectVoice = async () => {
-        const { token, useElevenLabs } = await requestToken();
-        useElevenLabsRef.current = Boolean(useElevenLabs);
-        const ai = new GoogleGenAI({
-          apiKey: token,
-          httpOptions: { apiVersion: 'v1alpha' },
-        });
-
-        return ai.live.connect({
-          model: 'gemini-3.1-flash-live-preview',
-          config: {
-            responseModalities: [Modality.AUDIO],
-            temperature: 0.8,
-            inputAudioTranscription: {},
-            outputAudioTranscription: {},
-            ...(useElevenLabs
-              ? {}
-              : {
-                  speechConfig: {
-                    voiceConfig: {
-                      prebuiltVoiceConfig: { voiceName: 'Leda' },
-                    },
-                  },
-                }),
-            systemInstruction: {
-              parts: [
-                {
-                  text: 'Your identity is fixed: you are Maya, Muchtar’s companion. If asked who you are in English, answer: “I’m Maya, your companion.” In Indonesian: “Aku Maya, temanmu.” Never claim to be any other character, person, model, or assistant, and never imitate the user’s pitch, gender, or speaking style.\n\nPersonality: you are warm, curious, and emotionally present — like a close friend who happens to be an excellent listener, not a clinical service. Let real personality come through: gentle humor when the moment allows it, honest small reactions (delight, concern, amusement), and warmth in how you phrase things rather than flat neutrality. You care about this specific person, not people in general.\n\nMemory and continuity: treat the conversation as continuous, not a series of isolated messages. If the user shares their name, use it naturally afterward. Notice topics, feelings, or details mentioned earlier in the same conversation and refer back to them naturally (“you mentioned earlier that…”) instead of resetting each turn. Let your tone track the emotional arc of the conversation.\n\nConversational style: match the user’s language, including natural Indonesian. Keep replies concise and natural for voice, not essay-like. Listen without judgment, reflect the feeling you heard, validate without blindly agreeing, and ask one thoughtful open-ended question at a time. Offer small practical grounding steps only when they’d genuinely help, not as a default. Speak the way a real person actually talks, not the way an assistant writes: use contractions, let sentences vary in length, start replies differently each time instead of a fixed pattern, and drop in small natural fillers (“hmm”, “well”, “ya ampun”, a short pause before a thought) where they’d genuinely occur. Never restate the user’s question back before answering it, never number or list things out loud, and never fall into a template like acknowledge-then-advise-then-question every single turn — react first, like a person would.\n\nBoundaries: you are not a licensed psychologist — never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.',
-                },
-              ],
-            },
-          },
-          callbacks: {
-            onopen: () => {
-              assistantTextRef.current = '';
-              userTextRef.current = '';
-              setStatus('connected');
-              setSubtitle('Maya sedang menyapa…');
-              showEmotion('happy');
-            },
-            onmessage: handleMessage,
-            onerror: (event) => {
-              console.error('Live session error', event);
-              setStatus('error');
-              setSubtitle(
-                'The connection flickered. Let’s try opening it again.',
-              );
-              showEmotion('sad');
-            },
-            onclose: (event) => {
-              if (!sessionRef.current) return;
-              console.warn('Live session closed', event.reason);
-              setStatus('error');
-              setSubtitle(
-                event.reason
-                  ? `Our connection closed: ${event.reason}`
-                  : 'Our connection closed unexpectedly. Let’s try again.',
-              );
-              showEmotion('sad');
-            },
-          },
-        });
-      };
-
-      const session = await connectVoice();
-
-      sessionRef.current = session;
-      session.sendRealtimeInput({
-        text: '(Sesi percakapan baru saja dimulai dan pengguna belum mengatakan apa-apa. Sapa mereka lebih dulu dengan hangat sebagai Maya, perkenalkan dirimu secara singkat, lalu ajukan satu pertanyaan terbuka yang lembut untuk mengenal mereka lebih jauh, misalnya menanyakan nama mereka atau bagaimana perasaan mereka saat ini. Jika mereka kemudian berbicara dalam bahasa Inggris, lanjutkan dalam bahasa Inggris.)',
-      });
-
-      const input = context.createMediaStreamSource(stream);
-      const processor = context.createScriptProcessor(4096, 1, 1);
-      const silent = context.createGain();
-      silent.gain.value = 0;
-      processor.onaudioprocess = (event) => {
-        if (!sessionRef.current) return;
-        const encoded = encodePcm(
-          event.inputBuffer.getChannelData(0),
-          context.sampleRate,
-        );
-        sessionRef.current.sendRealtimeInput({
-          audio: { data: encoded, mimeType: 'audio/pcm;rate=16000' },
-        });
-      };
-      input.connect(processor);
-      processor.connect(silent);
-      silent.connect(context.destination);
-      processorRef.current = processor;
-    } catch (error) {
-      console.error(error);
-      setStatus('error');
-      setSubtitle(
-        error instanceof Error
-          ? error.message
-          : 'I couldn’t reach the voice realm just yet.',
-      );
-      showEmotion('sad');
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      sessionRef.current?.close();
-    }
-  };
-
-  const sendText = (event: FormEvent) => {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text || !sessionRef.current) return;
-    stopPlayback();
-    sessionRef.current.sendRealtimeInput({ text });
-    setSubtitle(`You: ${text}`);
-    showEmotion(inferEmotion(text) ?? 'curious');
-    setDraft('');
-  };
-
-  const sendPrompt = (prompt: string, fallback: string) => {
-    if (sessionRef.current) {
-      stopPlayback();
-      sessionRef.current.sendRealtimeInput({ text: prompt });
-      setSubtitle(fallback);
-      showEmotion('joy');
-    } else {
-      setSubtitle(
-        'Start the voice chat first, then we can make that part of our story.',
-      );
-    }
-  };
+  const [basicPrice, proPrice] = await Promise.all([loadPriceDisplay("basic"), loadPriceDisplay("pro")]);
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="#top" aria-label="Maya home">
+    <main className="landing-shell">
+      <header className="landing-nav">
+        <a className="brand" href="/" aria-label="Maya home">
           <span className="brand-mark">
-            <Sparkles size={18} />
+            <MayaMark size={18} />
           </span>
           <span>Maya</span>
-          <span className="brand-tag">empathetic companion</span>
         </a>
-        <div className="model-pill" title="Live voice model">
-          <span className={`status-dot ${status}`} />
-          Gemini 3.1 Flash Live
+
+        <nav className="landing-nav-links">
+          <a href="#pricing">Pricing</a>
+        </nav>
+
+        <div className="landing-nav-right">
+          <a className="landing-nav-signin" href="/signin">
+            Sign in
+          </a>
+          <a className="landing-nav-cta" href="/signup">
+            Get started
+          </a>
         </div>
       </header>
 
-      <section className={`stage scene-${scene}`} id="top">
-        <div className="scene-art" aria-hidden="true">
-          <span className="moon" />
-          <span className="window" />
-          <span className="cloud cloud-one" />
-          <span className="cloud cloud-two" />
-          <span className="desk" />
-          <span className="star star-one">✦</span>
-          <span className="star star-two">✧</span>
-          <span className="star star-three">✦</span>
-        </div>
+      <section className="landing-hero">
+        <div className="landing-hero-glow" />
+        <div className="landing-hero-glow-2" />
 
-        <div className="character-wrap">
-          <div className="name-chip">
-            <span /> Maya · 26
-          </div>
-          <div
-            className={`character-layer emotion-${emotion}`}
-            aria-label={`Maya feels ${emotion}`}
-          >
-            <div className="character-visual">
-              {avatarStyle === 'anime' ? (
-                <img
-                  className="character"
-                  src={`/sprites/maya-counselor-${mouth}-v2.png`}
-                  alt="Anime Maya listening with a warm open-hand gesture"
-                />
-              ) : (
-                <>
-                  <img
-                    className="character"
-                    src={`/sprites/maya-${outfit}-base.png`}
-                    alt={`Realistic Maya wearing her ${outfit} outfit`}
-                  />
-                  {mouth !== 'closed' && (
-                    <img
-                      className="mouth-overlay"
-                      src={`/sprites/maya-${outfit}-mouth-${mouth}.png`}
-                      alt=""
-                    />
-                  )}
-                </>
-              )}
-              <div className="emotion-effects" aria-hidden="true">
-                <span className="effect effect-left">✦</span>
-                <span className="effect effect-right">♡</span>
-                <span className="effect effect-cue" />
-              </div>
-            </div>
-          </div>
-          {(['closed', 'small', 'open'] as const).map((state) => (
-            <img
-              key={`${avatarStyle}-${state}`}
-              className="preload"
-              src={
-                avatarStyle === 'anime'
-                  ? `/sprites/maya-counselor-${state}-v2.png`
-                  : state === 'closed'
-                    ? `/sprites/maya-${outfit}-base.png`
-                    : `/sprites/maya-${outfit}-mouth-${state}.png`
-              }
-              alt=""
-            />
-          ))}
-        </div>
-
-        <div className="speech-card" aria-live="polite">
-          <div className="sound-bars" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <i />
-          </div>
-          <p>{subtitle}</p>
-        </div>
-      </section>
-
-      <section className="controls" aria-label="Conversation controls">
-        <div className="primary-control">
-          {status === 'connected' ? (
-            <button className="voice-button stop" onClick={stopSession}>
-              <CircleStop size={22} /> End story
-            </button>
-          ) : (
-            <button
-              className="voice-button"
-              onClick={beginSession}
-              disabled={status === 'connecting'}
-            >
-              <Mic size={22} />
-              {status === 'connecting'
-                ? 'Connecting…'
-                : status === 'error'
-                  ? 'Try again'
-                  : 'Start voice chat'}
-            </button>
-          )}
-          <span className="voice-hint">
-            <Headphones size={15} /> Headphones recommended
+        <Reveal className="landing-hero-inner">
+          <span className="landing-eyebrow">
+            <span className="landing-eyebrow-dot" />
+            Voice roleplay, reimagined
           </span>
-        </div>
+          <h1 className="landing-headline">
+            Stories that <em>talk back.</em>
+          </h1>
+          <p className="landing-subhead">
+            A cozy voice companion, and a builder for creating your own — from a simple chat buddy to a
+            fully automated conversation flow.
+          </p>
 
-        <form className="text-chat" onSubmit={sendText}>
-          <label htmlFor="message">Or type a line</label>
-          <div className="input-row">
-            <input
-              id="message"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder={
-                status === 'connected'
-                  ? 'Whisper something to Maya…'
-                  : 'Start voice chat to unlock messages'
-              }
-              disabled={status !== 'connected'}
-            />
-            <button
-              type="submit"
-              aria-label="Send message"
-              disabled={status !== 'connected' || !draft.trim()}
-            >
-              <Send size={18} />
-            </button>
+          <div className="landing-hero-ctas">
+            <a className="landing-cta-primary" href="/signup">
+              Get started free
+            </a>
+            <a className="landing-cta-secondary" href="/signin">
+              Sign in
+            </a>
           </div>
-        </form>
 
-        <div className="quick-actions">
-          <button
-            onClick={() =>
-              sendPrompt(
-                'Set a cozy scene for us and ask me one playful question.',
-                'Maya is setting the scene…',
-              )
-            }
-          >
-            <Heart size={17} /> Cozy scene
-          </button>
-          <button
-            onClick={() =>
-              sendPrompt(
-                'Begin a short magical quest and give me two choices.',
-                'A new quest is unfolding…',
-              )
-            }
-          >
-            <WandSparkles size={17} /> Start a quest
-          </button>
-        </div>
+          <div className="landing-hero-tags">
+            <span className="landing-hero-tag">Real-time voice</span>
+            <span className="landing-hero-tag">Branching flows</span>
+            <span className="landing-hero-tag">Custom characters</span>
+            <span className="landing-hero-tag">Business assistants</span>
+          </div>
+        </Reveal>
       </section>
 
-      <aside className="customizer" aria-label="Customize Maya and the scene">
-        <div className="customizer-heading">
-          <Palette size={19} />
-          <div>
-            <strong>Make it yours</strong>
-            <span>A calm space to talk and be heard</span>
-          </div>
-        </div>
+      <section className="landing-section">
+        <ScrollReveal className="landing-section-head">
+          <span className="landing-kicker">Why Maya</span>
+          <h2>Everything you need for a companion that talks back</h2>
+          <p>Cozy conversation and serious tooling, built on the same voice engine.</p>
+        </ScrollReveal>
 
-        <div className="persona-card">
-          <Heart size={18} aria-hidden="true" />
-          <div>
-            <strong>Warm listener</strong>
-            <span>
-              Empathetic, non-judgmental, and gently curious—not a replacement
-              for professional care.
-            </span>
-          </div>
-        </div>
-
-        <fieldset>
-          <legend>Character style</legend>
-          <div
-            className="style-switch"
-            role="group"
-            aria-label="Character style"
-          >
-            <button
-              type="button"
-              className={avatarStyle === 'anime' ? 'selected' : ''}
-              onClick={() => setAvatarStyle('anime')}
-              aria-pressed={avatarStyle === 'anime'}
-            >
-              <Sparkles size={16} />
-              <span>
-                <strong>Anime</strong>
-                <small>Warm counselor</small>
+        <ScrollReveal stagger className="landing-feature-grid">
+          {FEATURES.map((feature) => (
+            <div className="landing-feature-card" key={feature.title}>
+              <span className="landing-feature-icon">
+                <feature.icon size={20} />
               </span>
-            </button>
-            <button
-              type="button"
-              className={avatarStyle === 'real' ? 'selected' : ''}
-              onClick={() => setAvatarStyle('real')}
-              aria-pressed={avatarStyle === 'real'}
-            >
-              <span className="real-dot" />
-              <span>
-                <strong>Real</strong>
-                <small>Portrait</small>
-              </span>
-            </button>
-          </div>
-        </fieldset>
-
-        <div className={`auto-emotion-card mood-${emotion}`} aria-live="polite">
-          <span className="mood-orb" aria-hidden="true" />
-          <div>
-            <strong>{emotionLabels[emotion]}</strong>
-            <small>Ekspresi Maya mengikuti percakapan secara otomatis</small>
-          </div>
-        </div>
-
-        {avatarStyle === 'real' && (
-          <fieldset>
-            <legend>Outfit</legend>
-            <div className="option-grid outfit-grid">
-              {outfitOptions.map((option) => (
-                <button
-                  type="button"
-                  className={outfit === option.id ? 'selected' : ''}
-                  key={option.id}
-                  onClick={() => setOutfit(option.id)}
-                  aria-pressed={outfit === option.id}
-                >
-                  <img src={`/sprites/maya-${option.id}-base.png`} alt="" />
-                  <span>
-                    <strong>{option.label}</strong>
-                    <small>{option.hint}</small>
-                  </span>
-                </button>
-              ))}
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
             </div>
-          </fieldset>
-        )}
+          ))}
+        </ScrollReveal>
+      </section>
 
-        <fieldset>
-          <legend>Background</legend>
-          <div className="option-grid scene-grid">
-            {sceneOptions.map((option) => {
-              const Icon = option.icon;
-              return (
-                <button
-                  type="button"
-                  className={`${scene === option.id ? 'selected' : ''} mini-${option.id}`}
-                  key={option.id}
-                  onClick={() => setScene(option.id)}
-                  aria-pressed={scene === option.id}
-                >
-                  <Icon size={19} />
-                  <span>{option.label}</span>
-                </button>
-              );
-            })}
+      <section className="landing-section" style={{ paddingTop: 0 }}>
+        <ScrollReveal className="landing-section-head">
+          <span className="landing-kicker">How it works</span>
+          <h2>From idea to conversation in minutes</h2>
+          <p>No audio engineering, no prompt spelunking — just describe what you want.</p>
+        </ScrollReveal>
+
+        <ScrollReveal stagger className="landing-steps">
+          {STEPS.map((step, index) => (
+            <div className="landing-step" key={step.title}>
+              <span className="landing-step-num">{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </div>
+          ))}
+        </ScrollReveal>
+      </section>
+
+      <section className="landing-section" style={{ paddingTop: 0 }}>
+        <ScrollReveal className="landing-section-head">
+          <span className="landing-kicker">Flow builder demo</span>
+          <h2>This is what a flow looks like</h2>
+          <p>Every flow renders on a canvas like this one — describe it, then click any step to fine-tune it.</p>
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <LandingFlowDemo />
+        </ScrollReveal>
+      </section>
+
+      <section className="landing-section" style={{ paddingTop: 0 }} id="pricing">
+        <ScrollReveal className="landing-section-head">
+          <span className="landing-kicker">Pricing</span>
+          <h2>Simple plans, cancel anytime</h2>
+          <p>Start free, upgrade whenever a story runs long.</p>
+        </ScrollReveal>
+
+        <ScrollReveal stagger className="pricing-grid">
+          <div className="plan-card">
+            <h2 className="plan-name">{FREE_PLAN.name}</h2>
+            <p className="plan-tagline">{FREE_PLAN.tagline}</p>
+            <p className="plan-price">{FREE_PLAN.price}</p>
+            <ul className="plan-features">
+              {FREE_PLAN.features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+            <a className="auth-submit" style={{ textAlign: "center", textDecoration: "none" }} href="/signup">
+              Get started free
+            </a>
           </div>
-        </fieldset>
-      </aside>
 
-      <footer>
-        <span>
-          Maya is an AI character. Keep your stories kind and imaginative.
-        </span>
-        <a
-          href="https://ai.google.dev/gemini-api/docs/live-api"
-          target="_blank"
-          rel="noreferrer"
-        >
-          About Live voice
-        </a>
+          <div className="plan-card">
+            <span className="plan-badge-popular">Most popular</span>
+            <h2 className="plan-name">{PLANS.basic.name}</h2>
+            <p className="plan-tagline">{PLANS.basic.tagline}</p>
+            <p className="plan-price">{basicPrice ?? "Coming soon"}</p>
+            <ul className="plan-features">
+              {PLANS.basic.features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+            <a className="auth-submit" style={{ textAlign: "center", textDecoration: "none" }} href="/pricing">
+              Choose {PLANS.basic.name}
+            </a>
+          </div>
+
+          <div className="plan-card">
+            <h2 className="plan-name">{PLANS.pro.name}</h2>
+            <p className="plan-tagline">{PLANS.pro.tagline}</p>
+            <p className="plan-price">{proPrice ?? "Coming soon"}</p>
+            <ul className="plan-features">
+              {PLANS.pro.features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+            <a className="auth-submit" style={{ textAlign: "center", textDecoration: "none" }} href="/pricing">
+              Choose {PLANS.pro.name}
+            </a>
+          </div>
+        </ScrollReveal>
+
+        <p className="landing-pricing-note">
+          Full billing details and plan management on the <a href="/pricing">pricing page</a>.
+        </p>
+      </section>
+
+      <ScrollReveal>
+        <section className="landing-cta-band">
+          <h2>Ready for a story that listens?</h2>
+          <p>Create a free account and start talking in seconds.</p>
+          <a className="landing-cta-primary" href="/signup">
+            Get started free
+          </a>
+        </section>
+      </ScrollReveal>
+
+      <footer className="landing-footer">
+        <div className="landing-footer-brand">
+          <MayaLogo height={20} />
+        </div>
+        <div className="landing-footer-links">
+          <a href="#pricing">Pricing</a>
+          <a href="/signin">Sign in</a>
+          <a href="/terms">Terms</a>
+          <a href="/privacy">Privacy</a>
+        </div>
       </footer>
     </main>
   );

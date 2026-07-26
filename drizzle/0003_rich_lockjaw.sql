@@ -1,0 +1,1 @@
+ALTER TABLE `flows` ADD `knowledge_base` text DEFAULT '[]' NOT NULL;
