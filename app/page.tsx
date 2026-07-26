@@ -6,6 +6,7 @@ import { PLANS, getPriceId, type PlanId } from "@/lib/billing/plans";
 import { MayaLogo, MayaMark } from "./brand/maya-logo";
 import Reveal from "./reveal";
 import ScrollReveal from "./scroll-reveal";
+import LandingFlowDemo from "./landing-flow-demo";
 
 const FEATURES = [
   {
@@ -166,6 +167,18 @@ export default async function LandingPage() {
               <p>{step.description}</p>
             </div>
           ))}
+        </ScrollReveal>
+      </section>
+
+      <section className="landing-section" style={{ paddingTop: 0 }}>
+        <ScrollReveal className="landing-section-head">
+          <span className="landing-kicker">Flow builder demo</span>
+          <h2>This is what a flow looks like</h2>
+          <p>Every flow renders on a canvas like this one — describe it, then click any step to fine-tune it.</p>
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <LandingFlowDemo />
         </ScrollReveal>
       </section>
 

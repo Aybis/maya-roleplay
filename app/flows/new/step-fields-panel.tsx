@@ -28,6 +28,11 @@ export default function StepFieldsPanel({
 
   return (
     <div className="node-panel-body">
+      <div className="node-panel-status">
+        <span className="node-panel-status-dot" />
+        <span className="node-panel-status-text">{TYPE_LABELS[step.type]} · Step {index + 1}</span>
+      </div>
+
       <label className="auth-label">Step {index + 1} type</label>
       <select
         className="auth-input"

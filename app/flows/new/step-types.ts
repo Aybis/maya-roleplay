@@ -32,11 +32,11 @@ export const TYPE_ICON: Record<StepDraft['type'], string> = {
 };
 
 export const TYPE_COLOR: Record<StepDraft['type'], string> = {
-  message: '#9a7fc0',
-  collect: '#6857aa',
-  condition: '#d99a4e',
-  webhook: '#4e9d7a',
-  end: '#b06868',
+  message: '#1f1b17',
+  collect: '#1f1b17',
+  condition: '#1f1b17',
+  webhook: '#1f1b17',
+  end: '#1f1b17',
 };
 
 export function makeKey() {

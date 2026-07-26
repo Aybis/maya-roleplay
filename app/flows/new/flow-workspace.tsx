@@ -170,7 +170,14 @@ export default function FlowWorkspace() {
         </aside>
 
         <main className="workspace-canvas-col">
-          <FlowCanvas steps={steps} onChange={setSteps} selectedKey={selectedKey} onSelectKey={setSelectedKey} />
+          <FlowCanvas
+            steps={steps}
+            onChange={setSteps}
+            selectedKey={selectedKey}
+            onSelectKey={setSelectedKey}
+            onAddStep={() => addStepOfType('message')}
+            onDeleteSelected={removeSelected}
+          />
         </main>
 
         <aside className="workspace-inspector">
