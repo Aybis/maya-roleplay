@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   }
   const plan = body.plan;
 
-  const db = getDb();
+  const db = await getDb();
   const [row] = await db
     .select({ stripeCustomerId: users.stripeCustomerId })
     .from(users)

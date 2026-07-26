@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.13.0",
+    "@libsql/client": "^0.17.4",
     "@xyflow/react": "^12.11.2",
     "drizzle-orm": "0.45.2",
     "gsap": "^3.15.0",

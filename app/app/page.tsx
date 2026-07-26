@@ -27,7 +27,7 @@ export default async function AppHome({
   const { category } = await searchParams;
   const activeCategory = category && FLOW_CATEGORIES.includes(category as (typeof FLOW_CATEGORIES)[number]) ? category : null;
 
-  const db = getDb();
+  const db = await getDb();
   const customFlows = await db
     .select()
     .from(flows)

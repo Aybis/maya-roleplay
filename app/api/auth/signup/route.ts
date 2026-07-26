@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const db = getDb();
+  const db = await getDb();
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
   if (existing) {
     return Response.json({ error: "An account with that email already exists." }, { status: 409 });

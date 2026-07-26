@@ -13,7 +13,7 @@ async function syncSubscription(subscription: Stripe.Subscription) {
   const plan = resolvePlanFromPriceId(priceId);
   const isActive = subscription.status === "active" || subscription.status === "trialing";
 
-  const db = getDb();
+  const db = await getDb();
   await db
     .update(users)
     .set({

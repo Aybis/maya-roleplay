@@ -13,7 +13,7 @@ export default async function AccountPage() {
     redirect("/signin?return_to=/account");
   }
 
-  const db = getDb();
+  const db = await getDb();
   const [userRow] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, user.id)).limit(1);
   const myFlows = await db.select().from(flows).where(eq(flows.createdBy, user.id)).orderBy(desc(flows.createdAt));
 
