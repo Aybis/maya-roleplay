@@ -351,6 +351,7 @@ export default function FlowApp({
     }
     stopPlayback();
     sessionRef.current.sendRealtimeInput({ text: prompt });
+    fullTranscriptRef.current += `User: ${prompt}\n`;
   };
 
   return (

@@ -16,7 +16,7 @@ const DEFAULT_LIMITS: Record<string, number> = {
 };
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
-function limitFor(kind: string): number {
+export function limitFor(kind: string): number {
   const envKey = `RATE_LIMIT_${kind.toUpperCase().replace(/-/g, "_")}_PER_DAY`;
   const override = Number(process.env[envKey]);
   return Number.isFinite(override) && override > 0 ? override : (DEFAULT_LIMITS[kind] ?? 100);

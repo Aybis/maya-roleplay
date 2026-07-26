@@ -375,6 +375,8 @@ export default function DealershipVoicePage() {
     }
     stopPlayback();
     sessionRef.current.sendRealtimeInput({ text: prompt });
+    setTranscript((prev) => [...prev, { kind: 'text', role: 'user', text: prompt }]);
+    fullTranscriptRef.current += `Customer: ${prompt}\n`;
     showEmotion('joy');
   };
 
@@ -392,7 +394,7 @@ export default function DealershipVoicePage() {
   return (
     <main className="app-shell dealership-shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="Dealership home">
+        <a className="brand" href="/app" aria-label="Back to Virgil home">
           <span className="brand-mark">
             <Car size={18} />
           </span>
