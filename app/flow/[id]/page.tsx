@@ -15,7 +15,7 @@ export default async function FlowPage({ params }: { params: Promise<{ id: strin
     redirect(`/signin?return_to=${encodeURIComponent(`/flow/${id}`)}`);
   }
 
-  const db = getDb();
+  const db = await getDb();
   const [flow] = await db.select().from(flows).where(eq(flows.id, id)).limit(1);
   if (!flow) notFound();
   if (flow.visibility === "private" && flow.createdBy !== user.id) notFound();

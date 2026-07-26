@@ -30,7 +30,7 @@ export async function createSession(userId: string): Promise<void> {
   const tokenHash = await sha256Hex(token);
   const expiresAt = Date.now() + SESSION_TTL_MS;
 
-  const db = getDb();
+  const db = await getDb();
   await db.insert(sessions).values({ id: tokenHash, userId, expiresAt });
 
   const cookieStore = await cookies();
@@ -49,7 +49,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!token) return null;
 
   const tokenHash = await sha256Hex(token);
-  const db = getDb();
+  const db = await getDb();
   const [row] = await db
     .select({
       expiresAt: sessions.expiresAt,
@@ -73,7 +73,7 @@ export async function destroySession(): Promise<void> {
 
   if (token) {
     const tokenHash = await sha256Hex(token);
-    const db = getDb();
+    const db = await getDb();
     await db.delete(sessions).where(eq(sessions.id, tokenHash));
   }
 

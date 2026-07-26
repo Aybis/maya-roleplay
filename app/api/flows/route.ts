@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   const id = crypto.randomUUID();
-  const db = getDb();
+  const db = await getDb();
   await db.insert(flows).values({
     id,
     createdBy: user.id,

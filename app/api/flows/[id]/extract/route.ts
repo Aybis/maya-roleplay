@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return Response.json({ error: "Sign in required." }, { status: 401 });
   }
 
-  const db = getDb();
+  const db = await getDb();
   const [flow] = await db.select().from(flows).where(eq(flows.id, id)).limit(1);
   if (!flow) return Response.json({ error: "Flow not found." }, { status: 404 });
   if (flow.visibility === "private" && flow.createdBy !== user.id) {

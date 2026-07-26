@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Sign in first." }, { status: 401 });
   }
 
-  const db = getDb();
+  const db = await getDb();
   const [row] = await db
     .select({ stripeCustomerId: users.stripeCustomerId })
     .from(users)

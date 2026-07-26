@@ -23,7 +23,7 @@ function limitFor(kind: string): number {
 }
 
 export async function checkRateLimit(userId: string, kind: string): Promise<boolean> {
-  const db = getDb();
+  const db = await getDb();
   const since = Date.now() - WINDOW_MS;
 
   const [row] = await db

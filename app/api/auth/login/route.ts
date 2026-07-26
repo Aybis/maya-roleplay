@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Email and password are required." }, { status: 400 });
   }
 
-  const db = getDb();
+  const db = await getDb();
   const [user] = await db
     .select({ id: users.id, email: users.email, plan: users.plan, passwordHash: users.passwordHash })
     .from(users)
