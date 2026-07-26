@@ -1,5 +1,5 @@
 import type { SessionUser } from "@/lib/auth/session";
-import { MayaMark } from "./brand/maya-logo";
+import { VirgilMark } from "./brand/virgil-logo";
 import SignOutButton from "./sign-out-button";
 
 export default function SiteHeader({ user }: { user: SessionUser | null }) {
@@ -8,9 +8,9 @@ export default function SiteHeader({ user }: { user: SessionUser | null }) {
     <header className="site-header">
       <a className="brand" href={homeHref}>
         <span className="brand-mark">
-          <MayaMark size={18} />
+          <VirgilMark size={18} />
         </span>
-        <span>Maya</span>
+        <span>Virgil</span>
       </a>
 
       <nav className="site-nav">

@@ -1,7 +1,7 @@
 import { getSessionUser } from "@/lib/auth/session";
 import SiteHeader from "../site-header";
 
-export const metadata = { title: "Privacy Policy — Maya" };
+export const metadata = { title: "Privacy Policy — Virgil" };
 
 export default async function PrivacyPage() {
   const user = await getSessionUser();
@@ -27,7 +27,7 @@ export default async function PrivacyPage() {
             your password in plain text).
           </li>
           <li>
-            <strong>Conversation data:</strong> the audio and text you send to Maya, and Maya&apos;s
+            <strong>Conversation data:</strong> the audio and text you send to Virgil, and Virgil&apos;s
             replies, so the conversation can happen and so we can debug problems.
           </li>
           <li>
@@ -95,7 +95,7 @@ export default async function PrivacyPage() {
         </p>
 
         <h2>8. Children&apos;s privacy</h2>
-        <p>Maya is intended for users 18 and older. We don&apos;t knowingly collect data from minors.</p>
+        <p>Virgil is intended for users 18 and older. We don&apos;t knowingly collect data from minors.</p>
 
         <h2>9. Changes</h2>
         <p>
@@ -107,7 +107,7 @@ export default async function PrivacyPage() {
         <p>Questions about this policy? Email [support email].</p>
 
         <p className="legal-switch">
-          <a href="/terms">Terms of Service</a> · <a href="/">Back to Maya</a>
+          <a href="/terms">Terms of Service</a> · <a href="/">Back to Virgil</a>
         </p>
       </div>
       </main>

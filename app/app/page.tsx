@@ -62,9 +62,9 @@ export default async function AppHome({
 
         <Reveal stagger delay={0.1} className="flow-grid">
           {(!activeCategory || activeCategory === "companion") && (
-            <a className="flow-card featured" href="/maya">
+            <a className="flow-card featured" href="/virgil">
               <span className="flow-card-badge">Companion</span>
-              <h2>Maya</h2>
+              <h2>Virgil</h2>
               <p>A warm, empathetic voice companion for cozy chats and gentle stories.</p>
             </a>
           )}

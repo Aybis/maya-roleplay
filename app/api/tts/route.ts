@@ -6,7 +6,7 @@ export const runtime = "edge";
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
-    return Response.json({ error: "Sign in to use Maya's voice." }, { status: 401 });
+    return Response.json({ error: "Sign in to use Virgil's voice." }, { status: 401 });
   }
 
   const allowed = await checkRateLimit(user.id, "tts");
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error:
-          "Maya's voice needs ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID in the site environment.",
+          "Virgil's voice needs ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID in the site environment.",
       },
       { status: 503 },
     );
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       const detail = await response.text().catch(() => "");
       console.error("ElevenLabs TTS failed", response.status, detail);
       return Response.json(
-        { error: "Maya's voice is unavailable right now." },
+        { error: "Virgil's voice is unavailable right now." },
         { status: 502 },
       );
     }
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Unable to reach ElevenLabs", error);
     return Response.json(
-      { error: "Maya's voice is unavailable right now." },
+      { error: "Virgil's voice is unavailable right now." },
       { status: 502 },
     );
   }

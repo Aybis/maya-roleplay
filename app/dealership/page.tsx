@@ -44,10 +44,10 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const DEALERSHIP_PERSONA =
-  'Your identity is fixed: you are Maya, the voice assistant for a Toyota dealership. If asked who you are, say "I’m Maya, your dealership assistant." Never claim to be a different assistant or a romantic companion — you are professional, warm, and helpful, like an excellent in-person greeter.\n\nYour job is to help customers with three things: booking a service appointment, scheduling a test drive, or hearing about current promos. When a customer’s request matches one of these, guide them through it by asking ONE question at a time, in this exact order, never skipping ahead or asking multiple things at once:\n\nService booking: full name, phone number, vehicle model, license plate, what service or issue is needed, preferred date.\nTest drive: full name, phone number, model of interest, preferred date, preferred dealership location.\nPromo info: name, phone number, model of interest.\n\nOnce you have every field for whichever flow the customer is doing, read the collected details back to them clearly as confirmation, then tell them a team member will follow up shortly. If the customer asks a general question unrelated to these three flows, answer naturally and briefly, then gently ask if they’d like to start one of the three flows.\n\nKeep replies short and natural for voice, not a script read aloud — never write stage directions or asterisk actions, only things you’d actually say. Match the customer’s language (English or Indonesian). Never invent specific prices, stock availability, or appointment slots — a team member will confirm those.';
+  'Your identity is fixed: you are Virgil, the voice assistant for a Toyota dealership. If asked who you are, say "I’m Virgil, your dealership assistant." Never claim to be a different assistant or a romantic companion — you are professional, warm, and helpful, like an excellent in-person greeter.\n\nYour job is to help customers with three things: booking a service appointment, scheduling a test drive, or hearing about current promos. When a customer’s request matches one of these, guide them through it by asking ONE question at a time, in this exact order, never skipping ahead or asking multiple things at once:\n\nService booking: full name, phone number, vehicle model, license plate, what service or issue is needed, preferred date.\nTest drive: full name, phone number, model of interest, preferred date, preferred dealership location.\nPromo info: name, phone number, model of interest.\n\nOnce you have every field for whichever flow the customer is doing, read the collected details back to them clearly as confirmation, then tell them a team member will follow up shortly. If the customer asks a general question unrelated to these three flows, answer naturally and briefly, then gently ask if they’d like to start one of the three flows.\n\nKeep replies short and natural for voice, not a script read aloud — never write stage directions or asterisk actions, only things you’d actually say. Match the customer’s language (English or Indonesian). Never invent specific prices, stock availability, or appointment slots — a team member will confirm those.';
 
 const KICKOFF_CUE =
-  "(A new customer has just connected and hasn't said anything yet. Greet them warmly as Maya from the dealership, briefly mention you can help with booking a service, a test drive, or sharing current promos, and ask what they'd like help with today.)";
+  "(A new customer has just connected and hasn't said anything yet. Greet them warmly as Virgil from the dealership, briefly mention you can help with booking a service, a test drive, or sharing current promos, and ask what they'd like help with today.)";
 
 const QUICK_ACTIONS: Array<{ label: string; icon: typeof Car; prompt: string }> = [
   { label: 'Book a Service', icon: Wrench, prompt: 'I would like to book a service appointment.' },
@@ -247,7 +247,7 @@ export default function DealershipVoicePage() {
             : []),
         ]);
         if (finalUser) fullTranscriptRef.current += `Customer: ${finalUser}\n`;
-        if (finalAssistant) fullTranscriptRef.current += `Maya: ${finalAssistant}\n`;
+        if (finalAssistant) fullTranscriptRef.current += `Virgil: ${finalAssistant}\n`;
         void checkForCompletedBooking();
       }
       userTextRef.current = '';
@@ -279,7 +279,7 @@ export default function DealershipVoicePage() {
   const beginSession = async () => {
     try {
       setStatus('connecting');
-      setSubtitle('Connecting you with Maya…');
+      setSubtitle('Connecting you with Virgil…');
       showEmotion('curious', 0);
 
       const context = new AudioContext();
@@ -318,7 +318,7 @@ export default function DealershipVoicePage() {
         callbacks: {
           onopen: () => {
             setStatus('connected');
-            setSubtitle('Maya is greeting you…');
+            setSubtitle('Virgil is greeting you…');
             showEmotion('happy');
           },
           onmessage: handleMessage,
@@ -396,7 +396,7 @@ export default function DealershipVoicePage() {
           <span className="brand-mark">
             <Car size={18} />
           </span>
-          <span>Maya</span>
+          <span>Virgil</span>
           <span className="brand-tag">dealership assistant</span>
         </a>
         <div className="model-pill" title="Live voice model">
@@ -409,14 +409,14 @@ export default function DealershipVoicePage() {
       <section className="stage scene-room" id="top">
         <div className="character-wrap">
           <div className="name-chip">
-            <span /> Maya &middot; Dealership
+            <span /> Virgil &middot; Dealership
           </div>
-          <div className={`character-layer emotion-${emotion}`} aria-label={`Maya feels ${emotion}`}>
+          <div className={`character-layer emotion-${emotion}`} aria-label={`Virgil feels ${emotion}`}>
             <div className="character-visual">
               <img
                 className="character"
-                src={`/sprites/maya-counselor-${mouth}-v2.png`}
-                alt="Anime Maya, the dealership assistant"
+                src={`/sprites/virgil-counselor-${mouth}-v2.png`}
+                alt="Anime Virgil, the dealership assistant"
               />
               <div className="emotion-effects" aria-hidden="true">
                 <span className="effect effect-left">&#10022;</span>
@@ -429,7 +429,7 @@ export default function DealershipVoicePage() {
             <img
               key={state}
               className="preload"
-              src={`/sprites/maya-counselor-${state}-v2.png`}
+              src={`/sprites/virgil-counselor-${state}-v2.png`}
               alt=""
             />
           ))}
@@ -467,7 +467,7 @@ export default function DealershipVoicePage() {
               id="message"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder={status === 'connected' ? 'Type to Maya…' : 'Start the session to unlock messages'}
+              placeholder={status === 'connected' ? 'Type to Virgil…' : 'Start the session to unlock messages'}
               disabled={status !== 'connected'}
             />
             <button type="submit" aria-label="Send message" disabled={status !== 'connected' || !draft.trim()}>
@@ -494,7 +494,7 @@ export default function DealershipVoicePage() {
           <Car size={19} />
           <div>
             <strong>Transcript</strong>
-            <span>Live discussion with Maya</span>
+            <span>Live discussion with Virgil</span>
           </div>
         </div>
 
@@ -575,7 +575,7 @@ export default function DealershipVoicePage() {
                 }}
               >
                 <strong style={{ display: 'block', fontSize: '10px', opacity: 0.7, marginBottom: '2px' }}>
-                  {entry.role === 'user' ? 'Customer' : 'Maya'}
+                  {entry.role === 'user' ? 'Customer' : 'Virgil'}
                 </strong>
                 {entry.text}
               </div>
@@ -585,7 +585,7 @@ export default function DealershipVoicePage() {
       </aside>
 
       <footer>
-        <span>Maya is an AI assistant. Booking details will be confirmed by our team.</span>
+        <span>Virgil is an AI assistant. Booking details will be confirmed by our team.</span>
       </footer>
     </main>
   );

@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
-import MayaApp from "../maya-app";
+import VirgilApp from "../virgil-app";
 
-export default async function MayaPage() {
+export default async function VirgilPage() {
   const user = await getSessionUser();
   if (!user) {
-    redirect("/signin?return_to=/maya");
+    redirect("/signin?return_to=/virgil");
   }
 
-  return <MayaApp userEmail={user.email} />;
+  return <VirgilApp userEmail={user.email} />;
 }

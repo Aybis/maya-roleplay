@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getStripe } from "@/lib/billing/stripe";
 import { PLANS, getPriceId, type PlanId } from "@/lib/billing/plans";
-import { MayaLogo, MayaMark } from "./brand/maya-logo";
+import { VirgilLogo, VirgilMark } from "./brand/virgil-logo";
 import Reveal from "./reveal";
 import ScrollReveal from "./scroll-reveal";
 import LandingFlowDemo from "./landing-flow-demo";
@@ -12,7 +12,7 @@ const FEATURES = [
   {
     icon: Heart,
     title: "A companion that's actually warm",
-    description: "Maya is ready whenever you want to talk — cozy chats, gentle stories, real conversation.",
+    description: "Virgil is ready whenever you want to talk — cozy chats, gentle stories, real conversation.",
   },
   {
     icon: Sparkles,
@@ -34,7 +34,7 @@ const FEATURES = [
 const STEPS = [
   {
     title: "Pick a companion, or create your own",
-    description: "Start with Maya, spin up a business assistant, or design a custom character from scratch.",
+    description: "Start with Virgil, spin up a business assistant, or design a custom character from scratch.",
   },
   {
     title: "Talk in real time",
@@ -48,9 +48,9 @@ const STEPS = [
 
 const FREE_PLAN = {
   name: "Free",
-  tagline: "Try Maya before you subscribe",
+  tagline: "Try Virgil before you subscribe",
   price: "$0",
-  features: ["Chat with Maya", "A handful of voice minutes each month", "Build and save one custom flow"],
+  features: ["Chat with Virgil", "A handful of voice minutes each month", "Build and save one custom flow"],
 };
 
 async function loadPriceDisplay(plan: PlanId): Promise<string | null> {
@@ -76,11 +76,11 @@ export default async function LandingPage() {
   return (
     <main className="landing-shell">
       <header className="landing-nav">
-        <a className="brand" href="/" aria-label="Maya home">
+        <a className="brand" href="/" aria-label="Virgil home">
           <span className="brand-mark">
-            <MayaMark size={18} />
+            <VirgilMark size={18} />
           </span>
-          <span>Maya</span>
+          <span>Virgil</span>
         </a>
 
         <nav className="landing-nav-links">
@@ -134,7 +134,7 @@ export default async function LandingPage() {
 
       <section className="landing-section">
         <ScrollReveal className="landing-section-head">
-          <span className="landing-kicker">Why Maya</span>
+          <span className="landing-kicker">Why Virgil</span>
           <h2>Everything you need for a companion that talks back</h2>
           <p>Cozy conversation and serious tooling, built on the same voice engine.</p>
         </ScrollReveal>
@@ -251,7 +251,7 @@ export default async function LandingPage() {
 
       <footer className="landing-footer">
         <div className="landing-footer-brand">
-          <MayaLogo height={20} />
+          <VirgilLogo height={20} />
         </div>
         <div className="landing-footer-links">
           <a href="#pricing">Pricing</a>

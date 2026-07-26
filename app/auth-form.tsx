@@ -2,7 +2,7 @@
 
 import { Heart, MessageCircle, Sparkles, Workflow } from 'lucide-react';
 import { FormEvent, useState } from 'react';
-import { MayaMark } from './brand/maya-logo';
+import { VirgilMark } from './brand/virgil-logo';
 import Reveal from './reveal';
 
 type Mode = 'signin' | 'signup';
@@ -10,13 +10,13 @@ type Mode = 'signin' | 'signup';
 const COPY: Record<Mode, { title: string; subtitle: string; cta: string; endpoint: string }> = {
   signin: {
     title: 'Welcome back',
-    subtitle: 'Sign in to pick up your story with Maya.',
+    subtitle: 'Sign in to pick up your story with Virgil.',
     cta: 'Sign in',
     endpoint: '/api/auth/login',
   },
   signup: {
     title: 'Create your account',
-    subtitle: 'A few seconds, then Maya is ready to talk.',
+    subtitle: 'A few seconds, then Virgil is ready to talk.',
     cta: 'Create account',
     endpoint: '/api/auth/signup',
   },
@@ -71,11 +71,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
   return (
     <main className="auth-split">
       <section className="auth-split-brand">
-        <a className="brand auth-split-logo" href="/" aria-label="Maya home">
+        <a className="brand auth-split-logo" href="/" aria-label="Virgil home">
           <span className="brand-mark">
-            <MayaMark size={18} />
+            <VirgilMark size={18} />
           </span>
-          <span>Maya</span>
+          <span>Virgil</span>
         </a>
 
         <Reveal>
@@ -100,11 +100,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
       <section className="auth-split-form-side">
         <Reveal className="auth-card" delay={0.1}>
-          <a className="brand auth-card-mobile-brand" href="/" aria-label="Maya home">
+          <a className="brand auth-card-mobile-brand" href="/" aria-label="Virgil home">
             <span className="brand-mark">
-              <MayaMark size={18} />
+              <VirgilMark size={18} />
             </span>
-            <span>Maya</span>
+            <span>Virgil</span>
           </a>
 
           <h1 className="auth-title">{copy.title}</h1>

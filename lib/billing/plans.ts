@@ -3,7 +3,7 @@ export type PlanId = "basic" | "pro";
 export const PLANS: Record<PlanId, { name: string; tagline: string; features: string[]; priceEnvVar: string }> = {
   basic: {
     name: "Basic",
-    tagline: "For regular conversations with Maya",
+    tagline: "For regular conversations with Virgil",
     features: ["More voice minutes per month", "Save your favorite scenes"],
     priceEnvVar: "STRIPE_BASIC_PRICE_ID",
   },
