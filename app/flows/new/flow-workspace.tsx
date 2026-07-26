@@ -1,18 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CreateFlowInput, FlowCategory } from '@/lib/flows/types';
-import { TYPE_ICON, TYPE_LABELS, defaultForType, makeKey, type StepDraft } from './step-types';
+import { TYPE_ICON, TYPE_LABELS, defaultForType, makeKey, previewOf, type StepDraft } from './step-types';
 import FlowCanvas from './flow-canvas';
 import FlowDetailsPanel from './flow-details-panel';
 import StepFieldsPanel from './step-fields-panel';
 import GenerateBox from './generate-box';
 import { SAMPLE_FLOW } from './sample-flow';
+import Tour, { type TourStep } from './tour';
 
 type QuickActionDraft = { label: string; prompt: string };
 type QADraft = { question: string; answer: string };
 
 const STEP_TYPES = Object.keys(TYPE_LABELS) as StepDraft['type'][];
+const ONBOARDING_SEEN_KEY = 'flow-builder-onboarding-seen';
+
+const ONBOARDING_STEPS: TourStep[] = [
+  {
+    selector: '.generate-box',
+    title: 'Describe your idea',
+    body: 'Type a scenario in plain language and it drafts the name, persona, and every step for you.',
+  },
+  {
+    selector: '.how-it-works-sample',
+    title: 'Or start from an example',
+    body: 'New here? Load a ready-made flow to see how everything fits together before building your own.',
+    onEnter: () => {
+      const details = document.querySelector<HTMLDetailsElement>('.how-it-works');
+      if (details) details.open = true;
+    },
+  },
+  {
+    selector: '.palette-grid',
+    title: 'Build it yourself',
+    body: 'Add steps here — they run top to bottom. A Branch step can send the conversation two different ways.',
+  },
+  {
+    selector: '.workspace-canvas-col',
+    title: 'Your flow, as a canvas',
+    body: 'Every step becomes a card here. Click any card to edit it on the right.',
+  },
+  {
+    selector: '.workspace-inspector',
+    title: 'Edit the details',
+    body: "Fill in your character's details here, or edit whichever card you've selected on the canvas.",
+  },
+  {
+    selector: '.workspace-save',
+    title: "You're ready",
+    body: 'Hit Create flow whenever you’re happy with it — you can always come back and edit later.',
+  },
+];
 
 export default function FlowWorkspace() {
   const [name, setName] = useState('');
@@ -31,8 +70,21 @@ export default function FlowWorkspace() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [tourSteps, setTourSteps] = useState<TourStep[] | null>(null);
 
   const selectedStep = steps.find((s) => s.key === selectedKey) ?? null;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.localStorage.getItem(ONBOARDING_SEEN_KEY)) return;
+    const timer = setTimeout(() => setTourSteps(ONBOARDING_STEPS), 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const finishTour = () => {
+    setTourSteps(null);
+    window.localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
+  };
 
   const applyGenerated = (flow: CreateFlowInput) => {
     setName(flow.name);
@@ -50,7 +102,35 @@ export default function FlowWorkspace() {
   const loadSample = () => {
     const hasDraft = name.trim() || persona.trim() || steps.length > 0;
     if (hasDraft && !window.confirm('This replaces what you have with the example flow. Continue?')) return;
-    applyGenerated(SAMPLE_FLOW);
+
+    setName(SAMPLE_FLOW.name);
+    setTagline(SAMPLE_FLOW.tagline);
+    setCategory(SAMPLE_FLOW.category);
+    setPersona(SAMPLE_FLOW.persona);
+    setStarterLine(SAMPLE_FLOW.starterLine);
+    setKickoffCue(SAMPLE_FLOW.kickoffCue);
+    setQuickActions(SAMPLE_FLOW.quickActions.length > 0 ? SAMPLE_FLOW.quickActions : [{ label: '', prompt: '' }]);
+    setKnowledgeBase(SAMPLE_FLOW.knowledgeBase.length > 0 ? SAMPLE_FLOW.knowledgeBase : [{ question: '', answer: '' }]);
+    setSelectedKey(null);
+    setSteps([]);
+
+    const sampleSteps = SAMPLE_FLOW.steps.map((step) => ({ ...step, key: step.id }) as StepDraft);
+    const walkthrough: TourStep[] = sampleSteps.map((step, i) => ({
+      selector: `[data-id="${step.key}"]`,
+      title: `Step ${i + 1}: ${TYPE_LABELS[step.type]}`,
+      body: previewOf(step),
+      onEnter: () => setSteps(sampleSteps.slice(0, i + 1)),
+    }));
+    walkthrough.push({
+      selector: '.workspace-inspector',
+      title: "That's the whole flow",
+      body: 'Click any card on the canvas to edit it here, or hit Create flow when you’re ready to publish it.',
+      onEnter: () => {
+        setSteps(sampleSteps);
+        setSelectedKey(null);
+      },
+    });
+    setTourSteps(walkthrough);
   };
 
   const addStepOfType = (type: StepDraft['type']) => {
@@ -177,6 +257,7 @@ export default function FlowWorkspace() {
             onSelectKey={setSelectedKey}
             onAddStep={() => addStepOfType('message')}
             onDeleteSelected={removeSelected}
+            locked={!!tourSteps}
           />
         </main>
 
@@ -226,6 +307,8 @@ export default function FlowWorkspace() {
           )}
         </aside>
       </div>
+
+      {tourSteps && <Tour steps={tourSteps} onFinish={finishTour} />}
     </div>
   );
 }

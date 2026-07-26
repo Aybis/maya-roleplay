@@ -153,6 +153,7 @@ export default function FlowCanvas({
   onSelectKey,
   onAddStep,
   onDeleteSelected,
+  locked = false,
 }: {
   steps: StepDraft[];
   onChange: (next: StepDraft[]) => void;
@@ -160,6 +161,7 @@ export default function FlowCanvas({
   onSelectKey: (key: string | null) => void;
   onAddStep: () => void;
   onDeleteSelected: () => void;
+  locked?: boolean;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<NodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -245,6 +247,14 @@ export default function FlowCanvas({
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
+        nodesDraggable={!locked}
+        nodesConnectable={!locked}
+        elementsSelectable={!locked}
+        panOnDrag={!locked}
+        zoomOnScroll={!locked}
+        zoomOnPinch={!locked}
+        zoomOnDoubleClick={!locked}
+        preventScrolling={!locked}
       >
         <Background gap={20} size={1.2} color="#e2ddd2" />
         <CanvasToolbar
