@@ -14,19 +14,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: baseUrl,
-    title: "Maya — Voice Roleplay Companion",
-    description: "Step into a cozy interactive story with Maya, a realistic voice companion.",
+    title: "Virgil — Voice Roleplay Companion",
+    description: "Step into a cozy interactive story with Virgil, a realistic voice companion.",
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
     openGraph: {
-      title: "Maya — Your story, spoken aloud.",
-      description: "A cozy interactive voice roleplay with Maya.",
+      title: "Virgil — Your story, spoken aloud.",
+      description: "A cozy interactive voice roleplay with Virgil.",
       type: "website",
-      images: [{ url: "/og.png", width: 1731, height: 909, alt: "Maya voice roleplay companion" }],
+      images: [{ url: "/og.png", width: 1731, height: 909, alt: "Virgil voice roleplay companion" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Maya — Your story, spoken aloud.",
-      description: "A cozy interactive voice roleplay with Maya.",
+      title: "Virgil — Your story, spoken aloud.",
+      description: "A cozy interactive voice roleplay with Virgil.",
       images: ["/og.png"],
     },
   };

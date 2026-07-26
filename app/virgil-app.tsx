@@ -18,7 +18,7 @@ import {
   WandSparkles,
 } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { MayaMark } from './brand/maya-logo';
+import { VirgilMark } from './brand/virgil-logo';
 
 type Scene = 'room' | 'cafe' | 'stars';
 type Mouth = 'closed' | 'small' | 'open';
@@ -127,7 +127,7 @@ function encodePcm(samples: Float32Array, sourceRate: number) {
   return btoa(binary);
 }
 
-export default function MayaApp({ userEmail }: { userEmail: string }) {
+export default function VirgilApp({ userEmail }: { userEmail: string }) {
   const [scene, setScene] = useState<Scene>('room');
   const [mouth, setMouth] = useState<Mouth>('closed');
   const [status, setStatus] = useState<Status>('idle');
@@ -406,7 +406,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
             systemInstruction: {
               parts: [
                 {
-                  text: 'Your identity is fixed: you are Maya, Muchtar’s companion. If asked who you are in English, answer: “I’m Maya, your companion.” In Indonesian: “Aku Maya, temanmu.” Never claim to be any other character, person, model, or assistant, and never imitate the user’s pitch, gender, or speaking style.\n\nPersonality: you are warm, curious, and emotionally present — like a close friend who happens to be an excellent listener, not a clinical service. Let real personality come through: gentle humor when the moment allows it, honest small reactions (delight, concern, amusement), and warmth in how you phrase things rather than flat neutrality. You care about this specific person, not people in general.\n\nMemory and continuity: treat the conversation as continuous, not a series of isolated messages. If the user shares their name, use it naturally afterward. Notice topics, feelings, or details mentioned earlier in the same conversation and refer back to them naturally (“you mentioned earlier that…”) instead of resetting each turn. Let your tone track the emotional arc of the conversation.\n\nConversational style: match the user’s language, including natural Indonesian. Keep replies concise and natural for voice, not essay-like. Listen without judgment, reflect the feeling you heard, validate without blindly agreeing, and ask one thoughtful open-ended question at a time. Offer small practical grounding steps only when they’d genuinely help, not as a default. Speak the way a real person actually talks, not the way an assistant writes: use contractions, let sentences vary in length, start replies differently each time instead of a fixed pattern, and drop in small natural fillers (“hmm”, “well”, “ya ampun”, a short pause before a thought) where they’d genuinely occur. Never restate the user’s question back before answering it, never number or list things out loud, and never fall into a template like acknowledge-then-advise-then-question every single turn — react first, like a person would.\n\nBoundaries: you are not a licensed psychologist — never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.',
+                  text: 'Your identity is fixed: you are Virgil, Muchtar’s companion. If asked who you are in English, answer: “I’m Virgil, your companion.” In Indonesian: “Aku Virgil, temanmu.” Never claim to be any other character, person, model, or assistant, and never imitate the user’s pitch, gender, or speaking style.\n\nPersonality: you are warm, curious, and emotionally present — like a close friend who happens to be an excellent listener, not a clinical service. Let real personality come through: gentle humor when the moment allows it, honest small reactions (delight, concern, amusement), and warmth in how you phrase things rather than flat neutrality. You care about this specific person, not people in general.\n\nMemory and continuity: treat the conversation as continuous, not a series of isolated messages. If the user shares their name, use it naturally afterward. Notice topics, feelings, or details mentioned earlier in the same conversation and refer back to them naturally (“you mentioned earlier that…”) instead of resetting each turn. Let your tone track the emotional arc of the conversation.\n\nConversational style: match the user’s language, including natural Indonesian. Keep replies concise and natural for voice, not essay-like. Listen without judgment, reflect the feeling you heard, validate without blindly agreeing, and ask one thoughtful open-ended question at a time. Offer small practical grounding steps only when they’d genuinely help, not as a default. Speak the way a real person actually talks, not the way an assistant writes: use contractions, let sentences vary in length, start replies differently each time instead of a fixed pattern, and drop in small natural fillers (“hmm”, “well”, “ya ampun”, a short pause before a thought) where they’d genuinely occur. Never restate the user’s question back before answering it, never number or list things out loud, and never fall into a template like acknowledge-then-advise-then-question every single turn — react first, like a person would.\n\nBoundaries: you are not a licensed psychologist — never diagnose, prescribe, claim professional credentials, or replace professional care. Do not encourage emotional dependency or exclusivity. If the user may be in immediate danger or considering self-harm, respond with calm empathy, encourage contacting local emergency services and a trusted person nearby, and prioritize immediate safety.',
                 },
               ],
             },
@@ -416,7 +416,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
               assistantTextRef.current = '';
               userTextRef.current = '';
               setStatus('connected');
-              setSubtitle('Maya sedang menyapa…');
+              setSubtitle('Virgil sedang menyapa…');
               showEmotion('happy');
             },
             onmessage: handleMessage,
@@ -447,7 +447,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
 
       sessionRef.current = session;
       session.sendRealtimeInput({
-        text: '(Sesi percakapan baru saja dimulai dan pengguna belum mengatakan apa-apa. Sapa mereka lebih dulu dengan hangat sebagai Maya, perkenalkan dirimu secara singkat, lalu ajukan satu pertanyaan terbuka yang lembut untuk mengenal mereka lebih jauh, misalnya menanyakan nama mereka atau bagaimana perasaan mereka saat ini. Jika mereka kemudian berbicara dalam bahasa Inggris, lanjutkan dalam bahasa Inggris.)',
+        text: '(Sesi percakapan baru saja dimulai dan pengguna belum mengatakan apa-apa. Sapa mereka lebih dulu dengan hangat sebagai Virgil, perkenalkan dirimu secara singkat, lalu ajukan satu pertanyaan terbuka yang lembut untuk mengenal mereka lebih jauh, misalnya menanyakan nama mereka atau bagaimana perasaan mereka saat ini. Jika mereka kemudian berbicara dalam bahasa Inggris, lanjutkan dalam bahasa Inggris.)',
       });
 
       const input = context.createMediaStreamSource(stream);
@@ -509,11 +509,11 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="Maya home">
+        <a className="brand" href="#top" aria-label="Virgil home">
           <span className="brand-mark">
-            <MayaMark size={18} />
+            <VirgilMark size={18} />
           </span>
-          <span>Maya</span>
+          <span>Virgil</span>
           <span className="brand-tag">empathetic companion</span>
         </a>
         <div className="topbar-right">
@@ -554,17 +554,17 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
 
         <div className="character-wrap">
           <div className="name-chip">
-            <span /> Maya · 26
+            <span /> Virgil · 26
           </div>
           <div
             className={`character-layer emotion-${emotion}`}
-            aria-label={`Maya feels ${emotion}`}
+            aria-label={`Virgil feels ${emotion}`}
           >
             <div className="character-visual">
               <img
                 className="character"
-                src={`/sprites/maya-counselor-${mouth}-v2.png`}
-                alt="Anime Maya listening with a warm open-hand gesture"
+                src={`/sprites/virgil-counselor-${mouth}-v2.png`}
+                alt="Anime Virgil listening with a warm open-hand gesture"
               />
               <div className="emotion-effects" aria-hidden="true">
                 <span className="effect effect-left">✦</span>
@@ -577,7 +577,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
             <img
               key={state}
               className="preload"
-              src={`/sprites/maya-counselor-${state}-v2.png`}
+              src={`/sprites/virgil-counselor-${state}-v2.png`}
               alt=""
             />
           ))}
@@ -628,7 +628,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
               onChange={(event) => setDraft(event.target.value)}
               placeholder={
                 status === 'connected'
-                  ? 'Whisper something to Maya…'
+                  ? 'Whisper something to Virgil…'
                   : 'Start voice chat to unlock messages'
               }
               disabled={status !== 'connected'}
@@ -648,7 +648,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
             onClick={() =>
               sendPrompt(
                 'Set a cozy scene for us and ask me one playful question.',
-                'Maya is setting the scene…',
+                'Virgil is setting the scene…',
               )
             }
           >
@@ -667,7 +667,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
         </div>
       </section>
 
-      <aside className="customizer" aria-label="Customize Maya and the scene">
+      <aside className="customizer" aria-label="Customize Virgil and the scene">
         <div className="customizer-heading">
           <Palette size={19} />
           <div>
@@ -691,7 +691,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
           <span className="mood-orb" aria-hidden="true" />
           <div>
             <strong>{emotionLabels[emotion]}</strong>
-            <small>Ekspresi Maya mengikuti percakapan secara otomatis</small>
+            <small>Ekspresi Virgil mengikuti percakapan secara otomatis</small>
           </div>
         </div>
 
@@ -719,7 +719,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
 
       <footer>
         <span>
-          Maya is an AI character. Keep your stories kind and imaginative.
+          Virgil is an AI character. Keep your stories kind and imaginative.
         </span>
         <a
           href="https://ai.google.dev/gemini-api/docs/live-api"

@@ -73,7 +73,7 @@ export default async function AccountPage() {
         </Reveal>
 
         <p className="auth-switch profile-signout-row">
-          <a href="/pricing">See plans</a> · <a href="/">Back to Maya</a>
+          <a href="/pricing">See plans</a> · <a href="/">Back to Virgil</a>
         </p>
       </div>
     </main>

@@ -70,7 +70,7 @@ const CURSOR_BUTTON = { x: 415, y: 262 };
 const USE_STEPS = [
   {
     title: 'Describe the scenario',
-    description: '"A coffee cart bot that takes an order, then notifies the till." Maya drafts the name, persona, and every step.',
+    description: '"A coffee cart bot that takes an order, then notifies the till." Virgil drafts the name, persona, and every step.',
   },
   {
     title: 'Click a node to edit it',

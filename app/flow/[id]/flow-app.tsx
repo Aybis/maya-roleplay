@@ -9,7 +9,7 @@ import {
 import { CircleStop, Mic, Send } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { buildSystemInstruction } from '@/lib/flows/safety';
-import { MayaMark } from '@/app/brand/maya-logo';
+import { VirgilMark } from '@/app/brand/virgil-logo';
 
 type Status = 'idle' | 'connecting' | 'connected' | 'error';
 type QuickAction = { label: string; prompt: string };
@@ -358,7 +358,7 @@ export default function FlowApp({
       <header className="topbar">
         <a className="brand" href="/app" aria-label="Back to flows">
           <span className="brand-mark">
-            <MayaMark size={18} />
+            <VirgilMark size={18} />
           </span>
           <span>{name}</span>
         </a>
@@ -434,7 +434,7 @@ export default function FlowApp({
       </section>
 
       <footer>
-        <span>{name} is an AI character created by a Maya user, not a real person. Not professional advice.</span>
+        <span>{name} is an AI character created by a Virgil user, not a real person. Not professional advice.</span>
         <a href={`/flow/${flowId}`}>Refresh</a>
       </footer>
     </main>
