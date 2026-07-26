@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/billing/stripe";
 import { PLANS, getPriceId, type PlanId } from "@/lib/billing/plans";
 import PricingCard from "./pricing-card";
 import SiteHeader from "../site-header";
+import Reveal from "../reveal";
 
 async function loadPriceDisplay(plan: PlanId): Promise<string | null> {
   try {
@@ -31,7 +32,7 @@ export default async function PricingPage() {
         <p className="auth-subtitle" style={{ textAlign: "center" }}>
           Upgrade any time. Cancel any time.
         </p>
-        <div className="pricing-grid">
+        <Reveal stagger className="pricing-grid">
           <PricingCard
             plan="basic"
             name={PLANS.basic.name}
@@ -50,7 +51,7 @@ export default async function PricingPage() {
             signedIn={!!user}
             currentPlan={user?.plan ?? "free"}
           />
-        </div>
+        </Reveal>
       </div>
       </main>
     </>

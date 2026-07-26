@@ -122,7 +122,7 @@ export default function FlowWorkspace() {
   return (
     <div className="workspace">
       <header className="workspace-topbar">
-        <a href="/" className="workspace-back">
+        <a href="/app" className="workspace-back">
           ← Flows
         </a>
         <input

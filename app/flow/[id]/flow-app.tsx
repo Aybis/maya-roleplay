@@ -6,9 +6,10 @@ import {
   type LiveServerMessage,
   type Session,
 } from '@google/genai';
-import { CircleStop, Mic, Send, Sparkles } from 'lucide-react';
+import { CircleStop, Mic, Send } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { buildSystemInstruction } from '@/lib/flows/safety';
+import { MayaMark } from '@/app/brand/maya-logo';
 
 type Status = 'idle' | 'connecting' | 'connected' | 'error';
 type QuickAction = { label: string; prompt: string };
@@ -355,9 +356,9 @@ export default function FlowApp({
   return (
     <main className="app-shell flow-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="Back to flows">
+        <a className="brand" href="/app" aria-label="Back to flows">
           <span className="brand-mark">
-            <Sparkles size={18} />
+            <MayaMark size={18} />
           </span>
           <span>{name}</span>
         </a>

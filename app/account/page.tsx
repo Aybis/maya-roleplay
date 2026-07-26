@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { flows, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
 import SiteHeader from "../site-header";
+import Reveal from "../reveal";
 import ManageBillingButton from "./manage-billing-button";
 
 export default async function AccountPage() {
@@ -25,15 +26,15 @@ export default async function AccountPage() {
       <SiteHeader user={user} />
 
       <div className="profile-wrap">
-        <section className="profile-hero">
+        <Reveal className="profile-hero">
           <span className="profile-avatar">{user.email.charAt(0).toUpperCase()}</span>
           <div>
             <h1 className="profile-email">{user.email}</h1>
             {memberSince ? <p className="profile-meta">Member since {memberSince}</p> : null}
           </div>
-        </section>
+        </Reveal>
 
-        <div className="profile-grid">
+        <Reveal stagger delay={0.1} className="profile-grid">
           <section className="profile-card">
             <h2 className="profile-card-title">Plan</h2>
             <div className="account-plan-row">
@@ -54,7 +55,7 @@ export default async function AccountPage() {
             {myFlows.length === 0 ? (
               <p className="field-hint">You haven&rsquo;t created a flow yet.</p>
             ) : (
-              <div className="profile-flow-list">
+              <Reveal stagger delay={0.2} className="profile-flow-list">
                 {myFlows.map((flow) => (
                   <a key={flow.id} className="profile-flow-row" href={`/flow/${flow.id}`}>
                     <div>
@@ -66,10 +67,10 @@ export default async function AccountPage() {
                     </span>
                   </a>
                 ))}
-              </div>
+              </Reveal>
             )}
           </section>
-        </div>
+        </Reveal>
 
         <p className="auth-switch profile-signout-row">
           <a href="/pricing">See plans</a> · <a href="/">Back to Maya</a>

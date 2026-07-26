@@ -1,19 +1,20 @@
-import { Sparkles } from "lucide-react";
 import type { SessionUser } from "@/lib/auth/session";
+import { MayaMark } from "./brand/maya-logo";
 import SignOutButton from "./sign-out-button";
 
 export default function SiteHeader({ user }: { user: SessionUser | null }) {
+  const homeHref = user ? "/app" : "/";
   return (
     <header className="site-header">
-      <a className="brand" href="/">
+      <a className="brand" href={homeHref}>
         <span className="brand-mark">
-          <Sparkles size={18} />
+          <MayaMark size={18} />
         </span>
         <span>Maya</span>
       </a>
 
       <nav className="site-nav">
-        <a href="/">Explore</a>
+        <a href={homeHref}>Explore</a>
         <a href="/pricing">Pricing</a>
       </nav>
 

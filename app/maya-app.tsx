@@ -18,6 +18,7 @@ import {
   WandSparkles,
 } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { MayaMark } from './brand/maya-logo';
 
 type Scene = 'room' | 'cafe' | 'stars';
 type Mouth = 'closed' | 'small' | 'open';
@@ -510,7 +511,7 @@ export default function MayaApp({ userEmail }: { userEmail: string }) {
       <header className="topbar">
         <a className="brand" href="#top" aria-label="Maya home">
           <span className="brand-mark">
-            <Sparkles size={18} />
+            <MayaMark size={18} />
           </span>
           <span>Maya</span>
           <span className="brand-tag">empathetic companion</span>

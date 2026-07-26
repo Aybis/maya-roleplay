@@ -2,6 +2,8 @@
 
 import { Heart, MessageCircle, Sparkles, Workflow } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { MayaMark } from './brand/maya-logo';
+import Reveal from './reveal';
 
 type Mode = 'signin' | 'signup';
 
@@ -71,34 +73,36 @@ export default function AuthForm({ mode }: { mode: Mode }) {
       <section className="auth-split-brand">
         <a className="brand auth-split-logo" href="/" aria-label="Maya home">
           <span className="brand-mark">
-            <Sparkles size={18} />
+            <MayaMark size={18} />
           </span>
           <span>Maya</span>
         </a>
 
-        <h1 className="auth-split-headline">Stories that talk back.</h1>
-        <p className="auth-split-tagline">
-          A cozy voice companion, and a builder for creating your own — from a simple chat
-          buddy to a fully automated conversation flow.
-        </p>
+        <Reveal>
+          <h1 className="auth-split-headline">Stories that talk back.</h1>
+          <p className="auth-split-tagline">
+            A cozy voice companion, and a builder for creating your own — from a simple chat
+            buddy to a fully automated conversation flow.
+          </p>
+        </Reveal>
 
-        <ul className="auth-split-features">
+        <Reveal stagger delay={0.25} className="auth-split-features">
           {FEATURES.map((feature) => (
-            <li key={feature.text}>
+            <div key={feature.text}>
               <span className="auth-split-feature-icon">
                 <feature.icon size={16} />
               </span>
               {feature.text}
-            </li>
+            </div>
           ))}
-        </ul>
+        </Reveal>
       </section>
 
       <section className="auth-split-form-side">
-        <div className="auth-card">
+        <Reveal className="auth-card" delay={0.1}>
           <a className="brand auth-card-mobile-brand" href="/" aria-label="Maya home">
             <span className="brand-mark">
-              <Sparkles size={18} />
+              <MayaMark size={18} />
             </span>
             <span>Maya</span>
           </a>
@@ -159,7 +163,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
               <a href="/privacy">Privacy Policy</a>.
             </p>
           ) : null}
-        </div>
+        </Reveal>
       </section>
     </main>
   );
