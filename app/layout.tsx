@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito, Quicksand } from "next/font/google";
 import { headers } from "next/headers";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const nunito = Nunito({ variable: "--font-body", subsets: ["latin"] });
@@ -35,7 +36,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${nunito.variable} ${quicksand.variable}`}>{children}</body>
+      <body className={`${nunito.variable} ${quicksand.variable}`}>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
