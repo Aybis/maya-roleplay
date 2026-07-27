@@ -53,14 +53,14 @@ const ONBOARDING_STEPS: TourStep[] = [
   },
 ];
 
-export default function FlowWorkspace() {
+export default function FlowWorkspace({ defaultVisibility = 'public' }: { defaultVisibility?: 'public' | 'private' }) {
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
   const [category, setCategory] = useState<FlowCategory>('companion');
   const [persona, setPersona] = useState('');
   const [starterLine, setStarterLine] = useState('');
   const [kickoffCue, setKickoffCue] = useState('');
-  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
+  const [visibility, setVisibility] = useState<'public' | 'private'>(defaultVisibility);
   const [quickActions, setQuickActions] = useState<QuickActionDraft[]>([
     { label: '', prompt: '' },
     { label: '', prompt: '' },

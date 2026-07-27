@@ -1,9 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { flows, users } from "@/db/schema";
+import { users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
-import SiteHeader from "../site-header";
+import AppShell from "../app-shell";
 import Reveal from "../reveal";
 import ManageBillingButton from "./manage-billing-button";
 
@@ -15,16 +15,13 @@ export default async function AccountPage() {
 
   const db = await getDb();
   const [userRow] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, user.id)).limit(1);
-  const myFlows = await db.select().from(flows).where(eq(flows.createdBy, user.id)).orderBy(desc(flows.createdAt));
 
   const memberSince = userRow?.createdAt
     ? new Date(userRow.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : null;
 
   return (
-    <main className="profile-shell">
-      <SiteHeader user={user} />
-
+    <AppShell user={user}>
       <div className="profile-wrap">
         <Reveal className="profile-hero">
           <span className="profile-avatar">{user.email.charAt(0).toUpperCase()}</span>
@@ -44,31 +41,28 @@ export default async function AccountPage() {
             <ManageBillingButton hasPlan={user.plan !== "free"} />
           </section>
 
-          <section className="profile-card profile-card-wide">
-            <div className="profile-card-head">
-              <h2 className="profile-card-title">My flows</h2>
-              <a href="/flows/new" className="profile-card-action">
-                + New flow
+          <section className="profile-card">
+            <h2 className="profile-card-title">Quick links</h2>
+            <div className="profile-flow-list">
+              <a className="profile-flow-row" href="/account/roleplays">
+                <div>
+                  <strong>My roleplays</strong>
+                  <span className="profile-flow-tagline">See every flow you&rsquo;ve created</span>
+                </div>
+              </a>
+              <a className="profile-flow-row" href="/account/usage">
+                <div>
+                  <strong>Usage</strong>
+                  <span className="profile-flow-tagline">Voice sessions and TTS calls</span>
+                </div>
+              </a>
+              <a className="profile-flow-row" href="/account/settings">
+                <div>
+                  <strong>Settings</strong>
+                  <span className="profile-flow-tagline">Password and flow defaults</span>
+                </div>
               </a>
             </div>
-
-            {myFlows.length === 0 ? (
-              <p className="field-hint">You haven&rsquo;t created a flow yet.</p>
-            ) : (
-              <Reveal stagger delay={0.2} className="profile-flow-list">
-                {myFlows.map((flow) => (
-                  <a key={flow.id} className="profile-flow-row" href={`/flow/${flow.id}`}>
-                    <div>
-                      <strong>{flow.name}</strong>
-                      <span className="profile-flow-tagline">{flow.tagline || "No tagline"}</span>
-                    </div>
-                    <span className={`flow-card-badge profile-flow-badge${flow.visibility === "private" ? " private" : ""}`}>
-                      {flow.visibility === "private" ? "Private" : flow.category}
-                    </span>
-                  </a>
-                ))}
-              </Reveal>
-            )}
           </section>
         </Reveal>
 
@@ -76,6 +70,6 @@ export default async function AccountPage() {
           <a href="/pricing">See plans</a> · <a href="/">Back to Virgil</a>
         </p>
       </div>
-    </main>
+    </AppShell>
   );
 }

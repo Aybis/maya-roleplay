@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `default_flow_visibility` text DEFAULT 'public' NOT NULL;

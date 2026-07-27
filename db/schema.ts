@@ -9,6 +9,7 @@ export const users = sqliteTable("users", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   stripeSubscriptionStatus: text("stripe_subscription_status"),
+  defaultFlowVisibility: text("default_flow_visibility").notNull().default("public"), // "public" | "private" -- preselected when creating a new flow
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 

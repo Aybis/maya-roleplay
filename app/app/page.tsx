@@ -4,7 +4,7 @@ import { getDb } from "@/db";
 import { flows } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
 import { FLOW_CATEGORIES } from "@/lib/flows/types";
-import SiteHeader from "../site-header";
+import AppShell from "../app-shell";
 import Reveal from "../reveal";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -38,9 +38,7 @@ export default async function AppHome({
   const filteredFlows = activeCategory ? customFlows.filter((flow) => flow.category === activeCategory) : customFlows;
 
   return (
-    <main className="picker-shell">
-      <SiteHeader user={user} />
-
+    <AppShell user={user}>
       <div className="picker-wrap">
         <Reveal>
           <h1 className="auth-title" style={{ fontSize: 30 }}>
@@ -95,6 +93,6 @@ export default async function AppHome({
           </a>
         </Reveal>
       </div>
-    </main>
+    </AppShell>
   );
 }
