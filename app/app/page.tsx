@@ -75,6 +75,14 @@ export default async function AppHome({
             </a>
           )}
 
+          {(!activeCategory || activeCategory === "business") && (
+            <a className="flow-card featured" href="/booking">
+              <span className="flow-card-badge">Runtime MVP</span>
+              <h2>Service Booking</h2>
+              <p>Create a persisted dealership booking and inspect every runtime step.</p>
+            </a>
+          )}
+
           {filteredFlows.map((flow) => (
             <a className="flow-card" href={`/flow/${flow.id}`} key={flow.id}>
               <span className="flow-card-badge">{flow.category}</span>

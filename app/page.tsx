@@ -1,4 +1,5 @@
 import { Heart, MessageCircle, Sparkles, Workflow } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getStripe } from "@/lib/billing/stripe";
@@ -76,12 +77,12 @@ export default async function LandingPage() {
   return (
     <main className="landing-shell">
       <header className="landing-nav">
-        <a className="brand" href="/" aria-label="Virgil home">
+        <Link className="brand" href="/" aria-label="Virgil home">
           <span className="brand-mark">
             <VirgilMark size={18} />
           </span>
           <span>Virgil</span>
-        </a>
+        </Link>
 
         <nav className="landing-nav-links">
           <a href="#pricing">Pricing</a>

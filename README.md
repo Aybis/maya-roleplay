@@ -23,7 +23,8 @@ This starter does not use `wrangler.jsonc`.
 - edit site code under `app/`
 - `.openai/hosting.json` declares optional Sites D1 and R2 bindings
 - `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
+- `db/schema.ts` contains the Maya auth, workspace, flow-version, conversation,
+  execution, trace, and dummy-booking schema
 - `examples/d1/` contains an optional D1 example surface
 - `drizzle.config.ts` supports local migration generation when needed
 
@@ -141,8 +142,26 @@ end:
 
 - `npm run dev`: start local development
 - `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm run build:vercel`: verify the production Next.js/Vercel build
+- `npm run lint`: run ESLint
+- `npm run typecheck`: run TypeScript without emitting files
+- `npm run test:unit`: run the deterministic flow-definition/runtime tests
+- `npm test`: run unit tests and the vinext production build
 - `npm run db:generate`: generate Drizzle migrations after schema changes
+- `npm run db:migrate:turso`: apply committed migrations to the configured
+  `TURSO_DATABASE_URL` (required before deploying the booking runtime)
+
+## Service-booking runtime MVP
+
+Authenticated users can open `/booking` to create or reuse the published MVP
+flow and enter its text test console. The runtime persists the conversation,
+captured answers, execution trace, and immutable flow-version reference. It
+then invokes the allow-listed dummy booking tool and completes with the
+`booking_created` outcome; the resulting booking is displayed inside the chat
+feed.
+
+Product decisions and intentionally deferred hardening are recorded in
+`docs/MAYA_MVP_DECISIONS.md` and `docs/TECH_DEBT.md`.
 
 ## Learn More
 

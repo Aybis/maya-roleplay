@@ -14,8 +14,10 @@ import {
   type NodeProps,
   type Node,
   type Edge,
+  type Connection,
+  type IsValidConnection,
 } from '@xyflow/react';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { TYPE_COLOR, TYPE_ICON, TYPE_LABELS, previewOf, type StepDraft } from './step-types';
 
 type NodeData = { step: StepDraft; index: number };
@@ -37,7 +39,26 @@ function FlowStepNode({ data, selected }: NodeProps<Node<NodeData>>) {
         <span className="flow-node-status-dot" />
       </div>
       <div className="flow-node-preview">{previewOf(step)}</div>
-      <Handle type="source" position={Position.Bottom} className="flow-node-handle" />
+      {step.type === 'condition' ? (
+        <>
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="true"
+            className="flow-node-handle flow-node-handle-true"
+            style={{ left: '32%' }}
+          />
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="false"
+            className="flow-node-handle flow-node-handle-false"
+            style={{ left: '68%' }}
+          />
+        </>
+      ) : step.type !== 'end' ? (
+        <Handle type="source" position={Position.Bottom} className="flow-node-handle" />
+      ) : null}
     </div>
   );
 }
@@ -195,6 +216,7 @@ export default function FlowCanvas({
           list.push({
             id: `${step.key}-t`,
             source: step.key,
+            sourceHandle: 'true',
             target: trueTarget,
             label: '✓ true',
             animated: true,
@@ -208,6 +230,7 @@ export default function FlowCanvas({
           list.push({
             id: `${step.key}-f`,
             source: step.key,
+            sourceHandle: 'false',
             target: falseTarget,
             label: '✗ false',
             animated: true,
@@ -230,6 +253,45 @@ export default function FlowCanvas({
     setEdges(list);
   }, [steps, setEdges]);
 
+  const isValidConnection: IsValidConnection = useCallback(
+    (edgeOrConnection) => {
+      const { source, target } = edgeOrConnection;
+      if (!source || !target || source === target) return false;
+      const sourceStep = steps.find((s) => s.key === source);
+      return !!sourceStep && sourceStep.type !== 'end';
+    },
+    [steps],
+  );
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      const { source, target, sourceHandle } = connection;
+      if (!source || !target || source === target) return;
+      const sourceStep = steps.find((s) => s.key === source);
+      const targetStep = steps.find((s) => s.key === target);
+      if (!sourceStep || !targetStep || sourceStep.type === 'end') return;
+
+      if (sourceStep.type === 'condition') {
+        const patch = sourceHandle === 'false' ? { whenFalse: target } : { whenTrue: target };
+        onChange(steps.map((s) => (s.key === source ? ({ ...s, ...patch } as StepDraft) : s)));
+        return;
+      }
+
+      // Regular steps have no explicit "next" field — their order in the array
+      // is the connection, so dropping onto a target moves it right after the source.
+      const without = steps.filter((s) => s.key !== target);
+      const sourceIndex = without.findIndex((s) => s.key === source);
+      if (sourceIndex === -1) return;
+      const reordered = [
+        ...without.slice(0, sourceIndex + 1),
+        targetStep,
+        ...without.slice(sourceIndex + 1),
+      ];
+      onChange(reordered);
+    },
+    [steps, onChange],
+  );
+
   return (
     <div className="flow-canvas-area">
       {steps.length === 0 && (
@@ -242,6 +304,8 @@ export default function FlowCanvas({
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onNodeClick={(_, node) => onSelectKey(node.id)}
         onPaneClick={() => onSelectKey(null)}
         nodeTypes={nodeTypes}

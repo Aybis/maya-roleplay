@@ -4,5 +4,5 @@
 // on Vercel) fails with "Cannot find module 'cloudflare:workers'" even though the
 // wrangler-based build never runs a type-check and so never surfaces it.
 declare module "cloudflare:workers" {
-  export const env: Record<string, any>;
+  export const env: Record<string, unknown> & { DB?: D1Database };
 }

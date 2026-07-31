@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
@@ -67,7 +68,7 @@ export default async function AccountPage() {
         </Reveal>
 
         <p className="auth-switch profile-signout-row">
-          <a href="/pricing">See plans</a> · <a href="/">Back to Virgil</a>
+          <a href="/pricing">See plans</a> · <Link href="/">Back to Virgil</Link>
         </p>
       </div>
     </AppShell>

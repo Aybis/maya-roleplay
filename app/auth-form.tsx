@@ -1,6 +1,7 @@
 'use client';
 
 import { Heart, MessageCircle, Sparkles, Workflow } from 'lucide-react';
+import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { VirgilMark } from './brand/virgil-logo';
 import Reveal from './reveal';
@@ -55,7 +56,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
 
-      window.location.href = safeReturnTo();
+      window.location.assign(safeReturnTo());
     } catch {
       setError('Could not reach the server. Please try again.');
       setSubmitting(false);
@@ -71,12 +72,12 @@ export default function AuthForm({ mode }: { mode: Mode }) {
   return (
     <main className="auth-split">
       <section className="auth-split-brand">
-        <a className="brand auth-split-logo" href="/" aria-label="Virgil home">
+        <Link className="brand auth-split-logo" href="/" aria-label="Virgil home">
           <span className="brand-mark">
             <VirgilMark size={18} />
           </span>
           <span>Virgil</span>
-        </a>
+        </Link>
 
         <Reveal>
           <h1 className="auth-split-headline">Stories that talk back.</h1>
@@ -100,12 +101,12 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
       <section className="auth-split-form-side">
         <Reveal className="auth-card" delay={0.1}>
-          <a className="brand auth-card-mobile-brand" href="/" aria-label="Virgil home">
+          <Link className="brand auth-card-mobile-brand" href="/" aria-label="Virgil home">
             <span className="brand-mark">
               <VirgilMark size={18} />
             </span>
             <span>Virgil</span>
-          </a>
+          </Link>
 
           <h1 className="auth-title">{copy.title}</h1>
           <p className="auth-subtitle">{copy.subtitle}</p>
