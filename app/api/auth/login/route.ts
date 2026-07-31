@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
+import { ensurePersonalWorkspace } from "@/lib/workspaces/current";
 
 export const runtime = "edge";
 
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     return Response.json(genericError, { status: 401 });
   }
 
+  await ensurePersonalWorkspace({ id: user.id, email: user.email, plan: user.plan });
   await createSession(user.id);
 
   return Response.json({ user: { id: user.id, email: user.email, plan: user.plan } });

@@ -1,4 +1,5 @@
 import { getSessionUser } from "@/lib/auth/session";
+import Link from "next/link";
 import SiteHeader from "../site-header";
 
 export const metadata = { title: "Privacy Policy — Virgil" };
@@ -107,7 +108,7 @@ export default async function PrivacyPage() {
         <p>Questions about this policy? Email [support email].</p>
 
         <p className="legal-switch">
-          <a href="/terms">Terms of Service</a> · <a href="/">Back to Virgil</a>
+          <a href="/terms">Terms of Service</a> · <Link href="/">Back to Virgil</Link>
         </p>
       </div>
       </main>

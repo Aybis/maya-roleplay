@@ -3,6 +3,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
+import { ensurePersonalWorkspace } from "@/lib/workspaces/current";
 
 export const runtime = "edge";
 
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
   const passwordHash = await hashPassword(password);
   const id = crypto.randomUUID();
   await db.insert(users).values({ id, email, passwordHash });
+  await ensurePersonalWorkspace({ id, email, plan: "free" });
   await createSession(id);
 
   return Response.json({ user: { id, email, plan: "free" } }, { status: 201 });

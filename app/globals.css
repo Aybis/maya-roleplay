@@ -11,6 +11,82 @@
   --shadow: 0 18px 46px rgba(31, 27, 23, 0.12);
 }
 
+/* Headless runtime MVP */
+.runtime-launcher {
+  width: min(680px, calc(100% - 40px));
+  margin: 80px auto;
+  padding: 42px;
+  border: 1px solid #ded8ce;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(31, 27, 23, 0.08);
+}
+.runtime-launcher h1 { margin: 14px 0 8px; font: 700 34px/1.15 var(--font-display); }
+.runtime-launcher p { color: #6f675f; line-height: 1.65; }
+.runtime-launch-button { width: auto; margin-top: 18px; padding-inline: 22px; }
+.runtime-console-shell { min-height: 100vh; background: #f5f2ec; color: #1f1b17; }
+.runtime-console-header {
+  min-height: 78px;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #ded8ce;
+  background: #fff;
+}
+.runtime-console-header h1 { margin: 3px 0 0; font-size: 20px; }
+.runtime-console-header p, .runtime-console-header a { margin: 0; color: #7b736a; font-size: 12px; }
+.runtime-console-header button {
+  border: 1px solid #cfc8bd;
+  border-radius: 10px;
+  background: #fff;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.runtime-console-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: calc(100vh - 78px); }
+.runtime-chat-panel { display: flex; flex-direction: column; min-width: 0; }
+.runtime-chat-feed { flex: 1; overflow: auto; padding: 32px max(24px, 8vw); }
+.runtime-empty { color: #7b736a; text-align: center; }
+.runtime-message { max-width: 680px; margin: 0 0 18px; }
+.runtime-message > span { display: block; margin-bottom: 5px; color: #81786f; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.runtime-message p { display: inline-block; margin: 0; padding: 13px 16px; border-radius: 15px; background: #fff; line-height: 1.5; box-shadow: 0 4px 18px rgba(31, 27, 23, 0.06); }
+.runtime-message-user { margin-left: auto; text-align: right; }
+.runtime-message-user p { background: #1f1b17; color: #fff; text-align: left; }
+.runtime-booking-card { max-width: 680px; margin: 24px 0; padding: 20px; border: 1px solid #a9cbb2; border-radius: 18px; background: #f4fbf5; box-shadow: 0 8px 30px rgba(45, 102, 61, 0.09); }
+.runtime-booking-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.runtime-booking-title strong { font-size: 18px; }
+.runtime-booking-title span { padding: 4px 9px; border-radius: 999px; background: #dcefe1; color: #275d35; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.runtime-booking-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px; margin: 0 0 14px; }
+.runtime-booking-card dl div { min-width: 0; }
+.runtime-booking-card dt { color: #68736a; font-size: 11px; text-transform: uppercase; }
+.runtime-booking-card dd { margin: 2px 0 0; overflow-wrap: anywhere; font-weight: 700; }
+.runtime-booking-card small { color: #68736a; }
+.runtime-chat-input { display: flex; gap: 10px; padding: 18px max(24px, 8vw); border-top: 1px solid #ded8ce; background: rgba(255,255,255,.9); }
+.runtime-chat-input input { flex: 1; min-width: 0; border: 1px solid #cfc8bd; border-radius: 13px; padding: 13px 15px; background: #fff; }
+.runtime-chat-input button { width: 46px; border: 0; border-radius: 13px; background: #1f1b17; color: #fff; display: grid; place-items: center; }
+.runtime-chat-input button:disabled { opacity: .35; }
+.runtime-console-error { margin: 0; padding: 0 8vw 18px; }
+.runtime-inspector { border-left: 1px solid #ded8ce; padding: 24px; overflow: auto; background: #fff; }
+.runtime-inspector h2 { margin: 0 0 12px; padding-top: 18px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.runtime-inspector h2:first-child { padding-top: 0; }
+.runtime-stats { margin: 0; }
+.runtime-stats div { display: flex; justify-content: space-between; gap: 20px; padding: 8px 0; border-bottom: 1px solid #eee9e2; }
+.runtime-stats dt { color: #81786f; }
+.runtime-stats dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; text-align: right; }
+.runtime-variables div { padding: 8px 10px; margin-bottom: 7px; border-radius: 9px; background: #f5f2ec; }
+.runtime-variables strong, .runtime-variables span { display: block; overflow-wrap: anywhere; }
+.runtime-variables strong { color: #81786f; font-size: 10px; text-transform: uppercase; }
+.runtime-traces { list-style: none; margin: 0; padding: 0; }
+.runtime-traces li { display: grid; grid-template-columns: 62px 1fr; gap: 2px 8px; padding: 8px 0; border-bottom: 1px solid #eee9e2; }
+.runtime-traces span { grid-row: 1 / 3; align-self: center; font-size: 10px; color: #71695f; text-transform: uppercase; }
+.runtime-traces small { color: #928a81; }
+@media (max-width: 860px) {
+  .runtime-console-grid { grid-template-columns: 1fr; }
+  .runtime-inspector { border-top: 1px solid #ded8ce; border-left: 0; }
+  .runtime-booking-card dl { grid-template-columns: 1fr; }
+}
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
@@ -755,6 +831,12 @@ select.auth-input { cursor: pointer; }
   background: #fff;
   border: 1.5px solid var(--node-color);
   box-shadow: none;
+}
+.flow-node-handle-true.react-flow__handle {
+  border-color: #1f1b17;
+}
+.flow-node-handle-false.react-flow__handle {
+  border-color: #8a8177;
 }
 
 .flow-toolbar {

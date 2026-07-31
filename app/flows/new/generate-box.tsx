@@ -40,11 +40,11 @@ export default function GenerateBox({ onGenerated }: { onGenerated: (flow: Creat
     <div className="generate-box">
       <div className="generate-box-head">
         <Wand2 size={17} />
-        <strong>Describe the scenario, I'll draft the flow</strong>
+        <strong>Describe the scenario, I&apos;ll draft the flow</strong>
       </div>
       <p className="field-hint">
-        e.g. "A pizza shop bot that takes an order — pizza type and size — then sends it to my
-        webhook." Everything below fills in automatically; review and edit before saving.
+        e.g. &quot;A pizza shop bot that takes an order — pizza type and size — then sends it to my
+        webhook.&quot; Everything below fills in automatically; review and edit before saving.
       </p>
       <textarea
         className="auth-input"

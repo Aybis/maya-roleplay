@@ -3,6 +3,7 @@ import { flows } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { validateCreateFlowInput } from "@/lib/flows/types";
+import { ensurePersonalWorkspace } from "@/lib/workspaces/current";
 
 export const runtime = "edge";
 
@@ -27,10 +28,12 @@ export async function POST(request: Request) {
   }
 
   const id = crypto.randomUUID();
+  const workspace = await ensurePersonalWorkspace(user);
   const db = await getDb();
   await db.insert(flows).values({
     id,
     createdBy: user.id,
+    workspaceId: workspace.id,
     name: result.value.name,
     tagline: result.value.tagline,
     category: result.value.category,
